@@ -16,11 +16,11 @@ Introducing Multi-View Foul Recognition, the AI-powered solution designed to mak
 
 This project uses the SoccerNet-MVFoul dataset, which can be downloaded via API:
 
-`
+```bash
 from SoccerNet.Downloader import SoccerNetDownloader as SNdl
 mySNdl = SNdl(LocalDirectory="path/to/SoccerNet")
 mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge"], password="enter password")
-`
+```
 
 ## 🔧 Installation
 
@@ -33,19 +33,19 @@ mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge
 ### Steps
 
 1. Clone the repository:
-`
+```bash
 git clone https://github.com/ghchen99/multi-view-foul-recognition.git
 cd multi-view-foul-recognition
-`
+```
 2. Install the required dependencies:
-`
+```bash
 pip install -r requirements.txt
-`
+```
 3. Download the pre-trained models from the release page or train your own model by following the instructions in the training folder.
 4. To run the demo, use the following command:
-`
+```bash
 python main.py --input_video your_video.mp4
-`
+```
 
 ## ⚙️ How It Works
 
@@ -59,7 +59,7 @@ This project uses advanced machine learning techniques to detect fouls in footba
 
 ## 📂 Folder Structure
 
-`
+```bash
 /multi-view-foul-recognition-2025
 │
 ├── /src               # Source code for video processing and model inference
@@ -68,7 +68,7 @@ This project uses advanced machine learning techniques to detect fouls in footba
 ├── requirements.txt   # Python dependencies
 ├── README.md          # Project documentation
 └── main.py            # Main entry point for running the system
-`
+```
 
 ## 🤝 Contributing
 
