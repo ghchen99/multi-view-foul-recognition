@@ -1,3 +1,4 @@
 SoccerNet
 python-dotenv
 opencv-python-headless
+seaborn
