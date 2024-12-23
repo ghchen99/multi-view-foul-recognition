@@ -1,6 +1,10 @@
-from SoccerNet.Downloader import SoccerNetDownloader as SNdl
-from dotenv import load_dotenv
 import os
+import ssl
+import certifi
+from dotenv import load_dotenv
+from SoccerNet.Downloader import SoccerNetDownloader as SNdl
+
+ssl._create_default_https_context = ssl.create_default_context
 
 load_dotenv()
 
