@@ -1,0 +1,66 @@
+# Compiled source files
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environments
+env/
+venv/
+.env
+
+# Node.js
+node_modules/
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# Build directories
+build/
+dist/
+
+# Coverage reports
+coverage/
+*.cover
+*.coverage
+*.cov
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+*.save
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# macOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
