@@ -62,4 +62,4 @@ coverage/
 *.DS_Store
 
 # data
-data/mvfouls/
+data/dataset/

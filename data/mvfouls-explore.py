@@ -1,57 +1,41 @@
 import os
-import json
 import cv2
+import json
 import numpy as np
 import matplotlib.pyplot as plt
-from collections import defaultdict
 
 # Load annotation file
-with open('data/mvfouls/test/annotations.json', 'r') as f:
+with open('data/dataset/test/annotations.json', 'r') as f:
     annotations = json.load(f)
 
 # Extract general dataset information
 print("Dataset Set:", annotations['Set'])
 print("Total Actions:", annotations['Number of actions'])
 
-# Analyze action distribution
 actions = annotations['Actions']
-action_classes = defaultdict(int)
-severities = []
-clip_counts = []
 
 for action_id, action_data in actions.items():
-    action_classes[action_data['Action class']] += 1
+    print(f"Action ID: {action_id}")
+    
+    # Extract action annotations
+    offence = action_data['Offence']
+    contact = action_data['Contact']
+    bodypart = action_data['Bodypart']
+    upperbodypart = action_data['Upper body part']
+    actionclass = action_data['Action class']
     severity = action_data['Severity']
-    if severity:  # Check if severity is not empty
-        severities.append(float(severity))
-    clip_counts.append(len(action_data['Clips']))
-
-# Plot action class distribution
-plt.figure(figsize=(12, 6))
-plt.bar(action_classes.keys(), action_classes.values())
-plt.title('Distribution of Action Classes')
-plt.xlabel('Action Class')
-plt.ylabel('Count')
-plt.xticks(rotation=45)
-plt.show()
-
-# Plot severity distribution
-plt.figure(figsize=(8, 6))
-plt.hist(severities, bins=10, alpha=0.7, color='blue')
-plt.title('Severity Distribution')
-plt.xlabel('Severity')
-plt.ylabel('Frequency')
-plt.grid(True)
-plt.show()
-
-# Plot clip count distribution
-plt.figure(figsize=(8, 6))
-plt.hist(clip_counts, bins=10, alpha=0.7, color='green')
-plt.title('Number of Clips per Action')
-plt.xlabel('Clip Count')
-plt.ylabel('Frequency')
-plt.grid(True)
-plt.show()
+    multiplefouls = action_data['Multiple fouls']
+    trytoplay = action_data['Try to play']
+    touchball = action_data['Touch ball']
+    handball = action_data['Handball']
+    handballoffence = action_data['Handball offence']
+    
+    # Extract action clips
+    for clip in action_data['Clips']:
+        url = clip['Url']
+        cameratype = clip['Camera type']
+        timestamp = clip['Timestamp']
+        replayspeed = clip['Replay speed']
 
 # Explore video data and prepare features
 def extract_features(video_path):
@@ -95,12 +79,12 @@ def extract_features(video_path):
         'max_motion': np.max(frame_diffs)
     }
 
-'''
+
 # Iterate through clips and test feature extraction
 features = []
 for action_id, action_data in actions.items():
     for clip in action_data['Clips']:
-        video_path = os.path.join(clip['Url'] + '.mp4')
+        video_path = os.path.join('data/' + clip['Url'].lower() + '.mp4')
         if os.path.exists(video_path):
             features.append(extract_features(video_path))
 
@@ -110,4 +94,3 @@ print(features[:5])
 # Save features for model input
 # np.save('video_features.npy', features)
 
-'''
