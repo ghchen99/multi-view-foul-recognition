@@ -92,13 +92,13 @@ class ActionData:
 
 def extract_features(video_path):
     """
-    Extracts motion-related features from a video file.
+    Extracts more advanced motion-related features from a sports video.
 
     Args:
     video_path (str): Path to the video file.
 
     Returns:
-    dict: A dictionary containing motion features such as mean, std, and max motion.
+    dict: A dictionary containing motion features such as mean, std, max motion, optical flow statistics, etc.
     """
     cap = cv2.VideoCapture(video_path)
 
@@ -111,9 +111,12 @@ def extract_features(video_path):
     logging.info(f"Video: {video_path}")
     logging.info(f"Frames: {frame_count}, Resolution: {width}x{height}, FPS: {fps}")
 
-    # Initialize motion intensity calculation
+    # Initialize feature extraction variables
     frame_diffs = []
-    
+    optical_flow_magnitudes = []
+    keypoint_diffs = []
+
+    # Read the first frame and initialize previous frame for motion tracking
     ret, prev_frame = cap.read()
     if not ret or prev_frame is None:
         logging.error("Failed to read the first frame.")
@@ -122,27 +125,62 @@ def extract_features(video_path):
 
     prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
 
+    # Initialize optical flow calculation parameters
+    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+    # For keypoint detection using goodFeaturesToTrack, you need to specify maxCorners, qualityLevel, and minDistance
+    feature_params = dict(
+        maxCorners=1000,  # Maximum number of corners to detect
+        qualityLevel=0.01,  # Minimum quality of corners to be considered
+        minDistance=10  # Minimum distance between detected corners
+    )
+
     while True:
         ret, frame = cap.read()
         if not ret or frame is None:
             break
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Motion difference based on grayscale frames
         diff = cv2.absdiff(prev_gray, gray)
         frame_diffs.append(np.sum(diff))
+
+        # Optical Flow computation (Lucas-Kanade method)
+        prev_pts = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)  # Updated to use feature_params
+        if prev_pts is not None:
+            next_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, gray, prev_pts, None, **lk_params)
+            if next_pts is not None:
+                flow = next_pts - prev_pts
+                magnitude = np.linalg.norm(flow, axis=1)
+                optical_flow_magnitudes.extend(magnitude)
+
+        # Keypoint detection (ORB in this case)
+        orb = cv2.ORB_create()
+        kp_prev = orb.detect(prev_gray, None)
+        kp_frame = orb.detect(gray, None)
+        keypoint_diffs.append(len(kp_frame) - len(kp_prev))
+
         prev_gray = gray
 
     cap.release()
 
-    # Normalize differences
+    # Normalize differences and optical flow
     if len(frame_diffs) > 0:
         frame_diffs = np.array(frame_diffs) / np.max(frame_diffs)
+    if len(optical_flow_magnitudes) > 0:
+        optical_flow_magnitudes = np.array(optical_flow_magnitudes)
 
     # Return statistics as potential features
     return {
         'mean_motion': np.mean(frame_diffs) if len(frame_diffs) > 0 else 0,
         'std_motion': np.std(frame_diffs) if len(frame_diffs) > 0 else 0,
-        'max_motion': np.max(frame_diffs) if len(frame_diffs) > 0 else 0
+        'max_motion': np.max(frame_diffs) if len(frame_diffs) > 0 else 0,
+        'mean_optical_flow': np.mean(optical_flow_magnitudes) if len(optical_flow_magnitudes) > 0 else 0,
+        'std_optical_flow': np.std(optical_flow_magnitudes) if len(optical_flow_magnitudes) > 0 else 0,
+        'max_optical_flow': np.max(optical_flow_magnitudes) if len(optical_flow_magnitudes) > 0 else 0,
+        'mean_keypoint_diff': np.mean(keypoint_diffs) if len(keypoint_diffs) > 0 else 0,
+        'std_keypoint_diff': np.std(keypoint_diffs) if len(keypoint_diffs) > 0 else 0
     }
 
 
