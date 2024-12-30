@@ -2,3 +2,4 @@ SoccerNet
 python-dotenv
 opencv-python-headless
 seaborn
+h5py

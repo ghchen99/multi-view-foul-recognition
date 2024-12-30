@@ -22,6 +22,8 @@ mySNdl = SNdl(LocalDirectory="path/to/SoccerNet")
 mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge"], password="enter password")
 ```
 
+The incident tends to occur close to frame 75 (3s) so previous studies have taken frames 63 to 87 as input.
+
 ## 🔧 Installation
 
 ### Prerequisites
