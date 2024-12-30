@@ -80,15 +80,27 @@ class ActionData:
         """
         Extracts motion features from the clips associated with the action.
 
+        Updates each clip in self.clips with a new field 'video_features'.
+
         Returns:
-        list: A list of extracted features from the clips, or an empty list if no valid clips.
+        None
         """
-        video_features = []
+        
         for clip in self.clips:
+            # Construct the video path
             video_path = os.path.join('data', clip['Url'].lower() + '.mp4')
+            
+            # Check if the video file exists
             if os.path.exists(video_path):
-                video_features.append(extract_features(video_path))
-        return video_features
+                # Extract features and store them in the 'video_features' field of the clip
+                clip['video_features'] = extract_features(video_path)
+            else:
+                # Log an error if the video file is not found
+                logging.error(f"Video file not found: {video_path}")
+                
+                # Set 'video_features' to None for missing files
+                clip['video_features'] = None
+
 
 def extract_features(video_path):
     """
@@ -195,24 +207,26 @@ def process_annotations(annotations):
     Returns:
     list: A list of extracted video features from all actions in the dataset.
     """
-    actions = annotations['Actions']
-    video_features = []
+    annotations = annotations['Actions']
+    result: ActionData = []
 
-    for action_id, action_data in actions.items():
+    for action_id, action_data in annotations.items():
         logging.info(f"Processing Action ID: {action_id}")
         
         # Create an ActionData object for each action
         action = ActionData(action_data)
         
         # Extract video features from action clips
-        video_features.extend(action.extract_clip_features())
+        action.extract_clip_features()
+        
+        result.append(action)
 
-    return video_features
+    return result
 
 # Load annotations and process
 annotations = load_annotations('data/dataset/test/annotations.json')
 log_dataset_info(annotations)
-video_features = process_annotations(annotations)
+actions = process_annotations(annotations)
 
 # Save features for model input
-np.save('data/video_features.npy', video_features)
+logging.info(f"Done: Extracted features for {len(actions)} actions.")
