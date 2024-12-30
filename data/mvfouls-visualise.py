@@ -1,99 +1,52 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
+import os
+import h5py
+import logging
 
-def visualise_features(file_path):
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Function to read data from HDF5 file
+def read_from_hdf5(input_file):
     """
-    Visualizes the video features saved in the specified .npy file with enhanced aesthetics,
-    accounting for empty features.
-
-    Args:
-    file_path (str): Path to the .npy file containing the saved features.
+    Reads action data and video features from an HDF5 file.
     """
-    # Load the features
-    features = np.load(file_path, allow_pickle=True)
+    with h5py.File(input_file, 'r') as f:
+        actions = []
+        for action_key in f.keys():
+            action_group = f[action_key]
 
-    # Check if features list is empty
-    if len(features) == 0:
-        print("No features available for visualization.")
-        return
+            # Read attributes (non-clip data)
+            action_data = {attr: action_group[attr][()] for attr in action_group if attr != 'clips'}
 
-    # Filter out empty features
-    valid_features = [f for f in features if f]  # Exclude empty dictionaries
-    
-    if len(valid_features) == 0:  # If no valid features remain
-        print("No valid features available for visualization.")
-        return
+            # Read clips data
+            clips = []
+            if 'clips' in action_group:
+                clips_group = action_group['clips']
+                for clip_key in clips_group.keys():
+                    clip_group = clips_group[clip_key]
+                    clip_data = {key: clip_group[key][()] for key in clip_group if key != 'video_features'}
 
-    # Extract features into separate arrays for visualization
-    mean_motion = [f.get('mean_motion', 0) for f in valid_features]
-    std_motion = [f.get('std_motion', 0) for f in valid_features]
-    max_motion = [f.get('max_motion', 0) for f in valid_features]
-    
-    # New features for optical flow and keypoint differences
-    mean_optical_flow = [f.get('mean_optical_flow', 0) for f in valid_features]
-    std_optical_flow = [f.get('std_optical_flow', 0) for f in valid_features]
-    max_optical_flow = [f.get('max_optical_flow', 0) for f in valid_features]
-    mean_keypoint_diff = [f.get('mean_keypoint_diff', 0) for f in valid_features]
-    std_keypoint_diff = [f.get('std_keypoint_diff', 0) for f in valid_features]
+                    # Read video_features if available
+                    video_features = {}
+                    if 'video_features' in clip_group:
+                        features_group = clip_group['video_features']
+                        video_features = {key: features_group[key][()] for key in features_group}
+                    
+                    clip_data['video_features'] = video_features
+                    clips.append(clip_data)
+            
+            action_data['clips'] = clips
+            actions.append(action_data)
 
-    # Use Seaborn style for better aesthetics
-    sns.set(style="whitegrid")
-    plt.figure(figsize=(18, 8))
+        logging.info(f"Read {len(actions)} actions from {input_file}")
+        return actions
 
-    # Plot Mean Motion
-    plt.subplot(2, 3, 1)
-    sns.lineplot(data=mean_motion, marker='o', color='blue', linewidth=2.5)
-    plt.title('Mean Motion Intensity', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Mean Intensity', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Plot Standard Deviation of Motion
-    plt.subplot(2, 3, 2)
-    sns.lineplot(data=std_motion, marker='o', color='green', linewidth=2.5)
-    plt.title('Standard Deviation of Motion', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Std Intensity', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Plot Max Motion
-    plt.subplot(2, 3, 3)
-    sns.lineplot(data=max_motion, marker='o', color='red', linewidth=2.5)
-    plt.title('Max Motion Intensity', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Max Intensity', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Plot Mean Optical Flow
-    plt.subplot(2, 3, 4)
-    sns.lineplot(data=mean_optical_flow, marker='o', color='purple', linewidth=2.5)
-    plt.title('Mean Optical Flow', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Mean Optical Flow', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Plot Standard Deviation of Optical Flow
-    plt.subplot(2, 3, 5)
-    sns.lineplot(data=std_optical_flow, marker='o', color='orange', linewidth=2.5)
-    plt.title('Std Optical Flow', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Std Optical Flow', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Plot Keypoint Difference
-    plt.subplot(2, 3, 6)
-    sns.lineplot(data=mean_keypoint_diff, marker='o', color='brown', linewidth=2.5, label='Mean Keypoint Diff')
-    sns.lineplot(data=std_keypoint_diff, marker='o', color='pink', linewidth=2.5, label='Std Keypoint Diff')
-    plt.title('Keypoint Difference', fontsize=14, fontweight='bold')
-    plt.xlabel('Clip Index', fontsize=12)
-    plt.ylabel('Keypoint Difference', fontsize=12)
-    plt.legend()
-    plt.grid(True, linestyle='--', alpha=0.6)
-
-    # Adjust layout and show plot
-    plt.tight_layout()
-    plt.suptitle('Video Motion Features Visualization', fontsize=16, fontweight='bold', y=1.02)
-    plt.show()
-    
-visualise_features('data/video_features.npy')
+# Example usage
+if __name__ == "__main__":
+    input_file = 'data/video_features.h5'
+    if os.path.exists(input_file):
+        actions = read_from_hdf5(input_file)
+        for idx, action in enumerate(actions):  # Print details of the first 5 actions
+            logging.info(f"Action {idx+1}: {action}")
+    else:
+        logging.error(f"File not found: {input_file}")
