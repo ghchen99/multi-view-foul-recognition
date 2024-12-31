@@ -39,7 +39,7 @@ class ActionData:
         self.bodypart = action_data['Bodypart']
         self.upperbodypart = action_data['Upper body part']
         self.actionclass = action_data['Action class']
-        self.severity = action_data['Severity']
+        self.severity = action_data['Severity'] # {1:"No card", 2:"Borderline No/Yellow", 3:"Yellow card", 4:"Borderline Yellow/Red", 5:"Red card"}
         self.multiplefouls = action_data['Multiple fouls']
         self.trytoplay = action_data['Try to play']
         self.touchball = action_data['Touch ball']
@@ -195,6 +195,7 @@ def save_to_hdf5(actions, output_file):
 # Main function to load, process, and save data
 def main():
     annotations = load_annotations('data/dataset/test/annotations.json')
+    
     log_dataset_info(annotations)
     actions = process_annotations(annotations)
     
