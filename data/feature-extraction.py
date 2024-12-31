@@ -32,19 +32,72 @@ class ActionData:
 
     def __init__(self, action_data):
         """
-        Initializes an ActionData object with the provided action data.
+        Initialises an ActionData object with the provided action data.
+
+        Parameters:
+        action_data (dict): A dictionary containing detailed information about the action. 
+
+        Attributes:
+        
+        offence (str): The type of offence committed. Options include:
+            - 'Offence' (2495 occurrences)
+            - 'No offence' (324 occurrences)
+            - 'Between' (96 occurrences)
+            
+        contact (str): Specifies whether there was contact during the action. Options include:
+            - 'With contact' (2835 occurrences)
+            - 'Without contact' (81 occurrences)
+            
+        bodypart (str): Indicates the body part involved in the action. Options include:
+            - 'Upper body' (1048 occurrences)
+            - 'Under body' (1831 occurrences)
+            
+        upperbodypart (str): Specifies the upper body part used in the action. Options include:
+            - 'Use of shoulder' (332 occurrences)
+            - 'Use of arms' (670 occurrences)
+            - 'Use of shoulders' (15 occurrences)
+            - 'Empty' (1899 occurrences)
+            
+        actionclass (str): Describes the class of action performed. Options include:
+            - 'Challenge' (383 occurrences)
+            - 'Tackling' (448 occurrences)
+            - 'Standing tackling' (1264 occurrences)
+            - 'High leg' (103 occurrences)
+            - 'Dive' (28 occurrences)
+            - 'Elbowing' (178 occurrences)
+            - 'Holding' (361 occurrences)
+            - 'Pushing' (88 occurrences)
+            
+        severity (float or str): Indicates the severity of the action, mapped to card types:
+            - 1.0: No card (1402 occurrences)
+            - 2.0: Borderline No/Yellow (403 occurrences)
+            - 3.0: Yellow card (687 occurrences)
+            - 4.0: Borderline Yellow/Red (44 occurrences)
+            - 5.0: Red card (27 occurrences)
+            
+        trytoplay (str): Specifies whether there was an attempt to play the ball. Options include:
+            - 'Yes' (1650 occurrences)
+            - 'No' (133 occurrences)
+            - 'Empty' (1133 occurrences)
+            
+        touchball (str): Indicates whether the ball was touched. Options include:
+            - 'Yes' (192 occurrences)
+            - 'No' (1543 occurrences)
+            - 'Maybe' (46 occurrences)
+            - 'Empty' (1135 occurrences)
+            
+        clips (list): Associated video clips or evidence related to the action.
         """
-        self.offence = action_data['Offence'] # {0:"No", 1:"Yes"}
-        self.contact = action_data['Contact'] # 
-        self.bodypart = action_data['Bodypart']
-        self.upperbodypart = action_data['Upper body part']
-        self.actionclass = action_data['Action class']
-        self.severity = action_data['Severity'] # {1:"No card", 2:"Borderline No/Yellow", 3:"Yellow card", 4:"Borderline Yellow/Red", 5:"Red card"}
-        self.multiplefouls = action_data['Multiple fouls']
+        self.offence = action_data['Offence'] # if Empty, skip this action
+        self.contact = action_data['Contact'] 
+        self.bodypart = action_data['Bodypart'] # if Empty, skip this action
+        # if bodypart == 'Upper body', bodypart should be updated to = upperbodypart
+        # 'Use of shoulders' -> 'Use of shoulder'
+        # self.upperbodypart = action_data['Upper body part']
+        self.actionclass = action_data['Action class'] # if Empty or Dont know, skip this action
+        self.severity = action_data['Severity'] # if Empty, skip this action
         self.trytoplay = action_data['Try to play']
         self.touchball = action_data['Touch ball']
-        self.handball = action_data['Handball']
-        self.handballoffence = action_data['Handball offence']
         self.clips = action_data['Clips']
 
     def extract_clip_features(self):
