@@ -95,6 +95,8 @@ Severity:
   Empty: 353 occurrences
   2.0: 403 occurrences
   4.0: 44 occurrences
+  
+  {1.0 :"No card", 2.0 :"Borderline No/Yellow", 3.0 :"Yellow card", 4.0 :"Borderline Yellow/Red", 5.0 :"Red card"}
 -----------------
 Multiple fouls:
   Empty: 377 occurrences

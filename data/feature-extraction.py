@@ -33,71 +33,69 @@ class ActionData:
     def __init__(self, action_data):
         """
         Initialises an ActionData object with the provided action data.
+        Sets self.valid to False if the action should be skipped, except for "No offence" cases
+        where empty values are populated with "missing".
 
         Parameters:
         action_data (dict): A dictionary containing detailed information about the action. 
-
-        Attributes:
-        
-        offence (str): The type of offence committed. Options include:
-            - 'Offence' (2495 occurrences)
-            - 'No offence' (324 occurrences)
-            - 'Between' (96 occurrences)
-            
-        contact (str): Specifies whether there was contact during the action. Options include:
-            - 'With contact' (2835 occurrences)
-            - 'Without contact' (81 occurrences)
-            
-        bodypart (str): Indicates the body part involved in the action. Options include:
-            - 'Upper body' (1048 occurrences)
-            - 'Under body' (1831 occurrences)
-            
-        upperbodypart (str): Specifies the upper body part used in the action. Options include:
-            - 'Use of shoulder' (332 occurrences)
-            - 'Use of arms' (670 occurrences)
-            - 'Use of shoulders' (15 occurrences)
-            - 'Empty' (1899 occurrences)
-            
-        actionclass (str): Describes the class of action performed. Options include:
-            - 'Challenge' (383 occurrences)
-            - 'Tackling' (448 occurrences)
-            - 'Standing tackling' (1264 occurrences)
-            - 'High leg' (103 occurrences)
-            - 'Dive' (28 occurrences)
-            - 'Elbowing' (178 occurrences)
-            - 'Holding' (361 occurrences)
-            - 'Pushing' (88 occurrences)
-            
-        severity (float or str): Indicates the severity of the action, mapped to card types:
-            - 1.0: No card (1402 occurrences)
-            - 2.0: Borderline No/Yellow (403 occurrences)
-            - 3.0: Yellow card (687 occurrences)
-            - 4.0: Borderline Yellow/Red (44 occurrences)
-            - 5.0: Red card (27 occurrences)
-            
-        trytoplay (str): Specifies whether there was an attempt to play the ball. Options include:
-            - 'Yes' (1650 occurrences)
-            - 'No' (133 occurrences)
-            - 'Empty' (1133 occurrences)
-            
-        touchball (str): Indicates whether the ball was touched. Options include:
-            - 'Yes' (192 occurrences)
-            - 'No' (1543 occurrences)
-            - 'Maybe' (46 occurrences)
-            - 'Empty' (1135 occurrences)
-            
-        clips (list): Associated video clips or evidence related to the action.
         """
-        self.offence = action_data['Offence'] # if Empty, skip this action
-        self.contact = action_data['Contact'] 
-        self.bodypart = action_data['Bodypart'] # if Empty, skip this action
-        # if bodypart == 'Upper body', bodypart should be updated to = upperbodypart
-        # 'Use of shoulders' -> 'Use of shoulder'
-        # self.upperbodypart = action_data['Upper body part']
-        self.actionclass = action_data['Action class'] # if Empty or Dont know, skip this action
-        self.severity = action_data['Severity'] # if Empty, skip this action
-        self.trytoplay = action_data['Try to play']
-        self.touchball = action_data['Touch ball']
+        # Initialize validity flag
+        self.valid = True
+        
+        # Special handling for "No offence" cases
+        is_no_offence = action_data['Offence'] == "No offence"
+        
+        # Check and store offence - skip if empty string and not "No offence"
+        if action_data['Offence'] == "" and not is_no_offence:
+            logging.warning("Skipping action: Empty offence value")
+            self.valid = False
+            return
+            
+        # Check and store bodypart - skip if empty string and not "No offence"
+        if action_data['Bodypart'] == "":
+            logging.warning("Skipping action: Empty bodypart value")
+            self.valid = False
+            return
+            
+        # Check and store actionclass - skip if empty string or Dont know and not "No offence"
+        if action_data['Action class'] in ["", "Dont know"]:
+            logging.warning("Skipping action: Invalid action class value")
+            self.valid = False
+            return
+
+        # Store offence value
+        self.offence = action_data['Offence']
+        
+        # Handle bodypart and upperbodypart logic
+        if action_data['Bodypart'] == "":
+            self.bodypart = "" if is_no_offence else action_data['Bodypart']
+        elif action_data['Bodypart'] == 'Upper body':
+            upperbodypart = action_data['Upper body part']
+            # Only update if upperbodypart is not empty string
+            if upperbodypart != "":
+                # Convert 'Use of shoulders' to 'Use of shoulder'
+                if upperbodypart == 'Use of shoulders':
+                    self.bodypart = 'Use of shoulder'
+                else:
+                    self.bodypart = upperbodypart
+            else:
+                self.bodypart = 'Upper body'  # Keep original value if upperbodypart is empty string
+        else:
+            self.bodypart = action_data['Bodypart']
+        
+        # Store actionclass - use "missing" for empty values in "No offence" cases
+        self.actionclass = "" if (action_data['Action class'] == "" and is_no_offence) else action_data['Action class']
+        
+        # Store severity - use "missing" for empty values in "No offence" cases
+        self.severity = "1.0" if (action_data['Severity'] == "") else action_data['Severity']
+        
+        # Store trytoplay - convert empty string to No or "missing" for "No offence" cases
+        self.trytoplay = "No" if (action_data['Try to play'] == "" and is_no_offence) else ('No' if action_data['Try to play'] == "" else action_data['Try to play'])
+        
+        # Store touchball - convert empty string to No or "missing" for "No offence" cases
+        self.touchball = "No" if (action_data['Touch ball'] == "" and is_no_offence) else ('No' if action_data['Touch ball'] == "" else action_data['Touch ball'])
+        
+        # Store clips
         self.clips = action_data['Clips']
 
     def extract_clip_features(self):
@@ -111,7 +109,7 @@ class ActionData:
                 logging.error(f"Video file not found: {video_path}")
 
 # Extract motion-related features from a video
-def extract_features(video_path, max_frames=None):
+def extract_features(video_path, max_frames=10):
     """
     Extracts motion-related features from a sports video.
     """
@@ -206,8 +204,11 @@ def process_annotations(annotations):
     for action_id, action_data in annotations['Actions'].items():
         logging.info(f"Processing Action ID: {action_id}")
         action = ActionData(action_data)
-        action.extract_clip_features()
-        result.append(action)
+        if action.valid:  # Check if initialisation succeeded
+            action.extract_clip_features()
+            result.append(action)
+        else:
+            logging.info(f"Skipped Action ID: {action_id}")
 
     return result
 
@@ -247,7 +248,7 @@ def save_to_hdf5(actions, output_file):
 
 # Main function to load, process, and save data
 def main():
-    annotations = load_annotations('data/dataset/test/annotations.json')
+    annotations = load_annotations('data/dataset/train/annotations.json')
     
     log_dataset_info(annotations)
     actions = process_annotations(annotations)
