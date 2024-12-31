@@ -4,6 +4,7 @@ import json
 import h5py
 import logging
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -109,9 +110,9 @@ class ActionData:
                 logging.error(f"Video file not found: {video_path}")
 
 # Extract motion-related features from a video
-def extract_features(video_path, max_frames=10):
+def extract_features(video_path):
     """
-    Extracts motion-related features from a sports video.
+    Extracts motion-related features from a sports video within the specified frame range.
     """
     cap = cv2.VideoCapture(video_path)
 
@@ -125,21 +126,30 @@ def extract_features(video_path, max_frames=10):
 
     logging.info(f"Video: {video_path}, Frames: {frame_count}, Resolution: {width}x{height}, FPS: {fps}")
 
-    # Set max_frames to the total frame count if not specified
-    if max_frames is None:
-        max_frames = frame_count
+    # Frame range for analysis (frames 63 to 87)
+    start_frame = 63
+    end_frame = 87
 
     # Initialize feature extraction variables
     frame_diffs, optical_flow_magnitudes, keypoint_diffs = [], [], []
 
-    # Read the first frame and initialize previous frame for motion tracking
-    ret, prev_frame = cap.read()
-    if not ret or prev_frame is None:
-        logging.error("Failed to read the first frame.")
-        cap.release()
-        return {}
+    # Move to the starting frame
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
-    prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+    # Preload frames into memory
+    frames = []
+    for frame_counter in range(start_frame, end_frame + 1):
+        ret, frame = cap.read()
+        if not ret or frame is None:
+            break
+        frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+
+    cap.release()
+
+    # Check if enough frames were loaded
+    if len(frames) < 2:
+        logging.error("Not enough frames loaded for processing.")
+        return {}
 
     # Optical flow calculation parameters
     lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -147,35 +157,41 @@ def extract_features(video_path, max_frames=10):
     # Keypoint detection parameters
     feature_params = dict(maxCorners=1000, qualityLevel=0.01, minDistance=10)
 
-    frame_counter = 0
-    while True:
-        ret, frame = cap.read()
-        if not ret or frame is None or frame_counter >= max_frames:
-            break
+    def process_frame(i):
+        nonlocal frames
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        prev_gray = frames[i]
+        gray = frames[i + 1]
 
         # Motion difference based on grayscale frames
-        frame_diffs.append(np.sum(cv2.absdiff(prev_gray, gray)))
+        frame_diff = np.sum(cv2.absdiff(prev_gray, gray))
 
         # Optical Flow computation
+        optical_flow_mag = []
         prev_pts = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)
         if prev_pts is not None:
             next_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, gray, prev_pts, None, **lk_params)
             if next_pts is not None:
                 flow = next_pts - prev_pts
-                optical_flow_magnitudes.extend(np.linalg.norm(flow, axis=1))
+                optical_flow_mag.extend(np.linalg.norm(flow, axis=1))
 
         # Keypoint detection
         orb = cv2.ORB_create()
         kp_prev = orb.detect(prev_gray, None)
         kp_frame = orb.detect(gray, None)
-        keypoint_diffs.append(len(kp_frame) - len(kp_prev))
+        keypoint_diff = len(kp_frame) - len(kp_prev)
 
-        prev_gray = gray
-        frame_counter += 1
+        return frame_diff, optical_flow_mag, keypoint_diff
 
-    cap.release()
+    # Parallel processing
+    with ThreadPoolExecutor() as executor:
+        results = list(executor.map(process_frame, range(len(frames) - 1)))
+
+    # Collect results
+    for frame_diff, optical_flow_mag, keypoint_diff in results:
+        frame_diffs.append(frame_diff)
+        optical_flow_magnitudes.extend(optical_flow_mag)
+        keypoint_diffs.append(keypoint_diff)
 
     # Normalize features
     def normalize_feature(feature):
