@@ -34,8 +34,8 @@ class ActionData:
         """
         Initializes an ActionData object with the provided action data.
         """
-        self.offence = action_data['Offence']
-        self.contact = action_data['Contact']
+        self.offence = action_data['Offence'] # {0:"No", 1:"Yes"}
+        self.contact = action_data['Contact'] # 
         self.bodypart = action_data['Bodypart']
         self.upperbodypart = action_data['Upper body part']
         self.actionclass = action_data['Action class']
