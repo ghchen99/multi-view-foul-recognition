@@ -1,8 +1,12 @@
 import cv2
 import torch
+import os
+import json
 import numpy as np
 import logging
+from HDF5 import save_to_hdf5
 from concurrent.futures import ThreadPoolExecutor
+from ActionData import ActionData
 from PIL import Image
 from torchvision import transforms
 from torchvision.models.video import r3d_18, R3D_18_Weights, MC3_18_Weights, mc3_18
@@ -185,14 +189,52 @@ class FeatureExtractor:
             'std_keypoint_diff': np.std(keypoint_diffs)
         }
 
-def main():
-    video_path = 'data/dataset/train/action_0/clip_0.mp4'
+def extract_clip_features(action: ActionData):
+    """
+    Extracts motion features from the clips associated with the action.
+    """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    for model_type in ['r3d_18', 'mc3_18', 'r2plus1d_18', 's3d', 'mvit_v2_s', 'mvit_v1_b']:
-        extractor = FeatureExtractor(model_type=model_type, device=device)
-        features = extractor.extract_features(video_path)
-        print(f"{model_type} features shape: {features.shape}")
 
-if __name__ == '__main__':
+    for clip in action.clips:
+        extractor = FeatureExtractor(model_type='r3d_18', device=device)
+        video_path = os.path.join('data', clip['Url'].lower() + '.mp4')
+        clip['video_features'] = extractor.extract_features(video_path) if os.path.exists(video_path) else None
+        if clip['video_features'] is None:
+            logging.error(f"Video file not found: {video_path}")
+    
+
+# Main processing function to extract features for all actions
+def process_annotations(annotations):
+    """
+    Processes dataset annotations and extracts video features.
+    """
+    result = []
+    
+    for action_id, action_data in annotations['Actions'].items():
+        logging.info(f"Processing Action ID: {action_id}")
+        action = ActionData(action_data)
+        if action.valid:  # Check if initialisation succeeded
+            extract_clip_features(action)
+            result.append(action)
+        else:
+            logging.info(f"Skipped Action ID: {action_id}")
+
+    return result
+
+# Main function to load, process, and save data
+def main():
+    
+    with open('data/dataset/train/annotations.json', 'r') as f:
+        annotations = json.load(f)
+    
+    logging.info(f"Dataset Set: {annotations['Set']}")
+    logging.info(f"Total Actions: {annotations['Number of actions']}")
+    actions = process_annotations(annotations)
+    
+    output_file = 'data/dataset/train/train_features.h5'
+    save_to_hdf5(actions, output_file)
+
+    logging.info(f"Done: Extracted features for {len(actions)} actions.")
+
+if __name__ == "__main__":
     main()
