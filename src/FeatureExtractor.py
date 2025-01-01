@@ -1,15 +1,10 @@
 import cv2
 import torch
-import numpy as np
 from PIL import Image
 from torchvision import transforms
 from torchvision.models.video import r3d_18, R3D_18_Weights, MC3_18_Weights, mc3_18
 from torchvision.models.video import r2plus1d_18, R2Plus1D_18_Weights, s3d, S3D_Weights
 from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights, mvit_v1_b, MViT_V1_B_Weights
-import shutil
-
-cache_dir = torch.hub.get_dir()
-shutil.rmtree(cache_dir)
 
 class FeatureExtractor:
     def __init__(self, model_type='r3d_18', device='cpu'):
@@ -55,13 +50,8 @@ class FeatureExtractor:
             processed_frames.append(processed_frame)
         
         frames_tensor = torch.stack(processed_frames)
-        
-        if 'mvit' in self.model_type:
-            # MViT expects (B, C, T, H, W)
-            return frames_tensor.permute(1, 0, 2, 3).unsqueeze(0)
-        else:
-            # Other models expect (B, C, T, H, W)
-            return frames_tensor.permute(1, 0, 2, 3)
+
+        return frames_tensor.permute(1, 0, 2, 3)
 
     def extract_features(self, video_path):
         cap = cv2.VideoCapture(video_path)
@@ -79,8 +69,11 @@ class FeatureExtractor:
 
         if len(frames) != 25:
             raise ValueError(f"Expected 25 frames, got {len(frames)}")
-
+        
         frames_tensor = self.preprocess_frames(frames).unsqueeze(0).to(self.device)
+        
+        # TODO: Fix for mvit models
+        print(f"Shape of frames_tensor: {frames_tensor.shape}")
         
         with torch.no_grad():
             features = self.model(frames_tensor)
