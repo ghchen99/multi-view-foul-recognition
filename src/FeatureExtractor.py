@@ -64,11 +64,19 @@ class FeatureExtractor:
 
         return model
 
+    def preprocess_frame(self, frame: np.ndarray) -> torch.Tensor:
+        """
+        Preprocesses a single frame.
+        """
+        return self.transform(Image.fromarray(frame))
+
     def preprocess_frames(self, frames: List[np.ndarray]) -> torch.Tensor:
         """
-        Preprocesses the frames before passing them to the model.
+        Preprocesses the frames concurrently.
         """
-        processed_frames = [self.transform(Image.fromarray(frame)) for frame in frames]
+        with ThreadPoolExecutor() as executor:
+            processed_frames = list(executor.map(self.preprocess_frame, frames))
+
         frames_tensor = torch.stack(processed_frames)
         return frames_tensor.permute(1, 0, 2, 3)
 
@@ -85,7 +93,7 @@ class FeatureExtractor:
 
         frames = []
 
-        # Capture frames 63 to 87
+        # Capture frames 63 to 87 sequentially (avoid concurrent access to VideoCapture)
         for frame_idx in range(63, 88):
             logging.debug(f"Processing frame {frame_idx}...")
             
@@ -108,13 +116,13 @@ class FeatureExtractor:
 
         logging.debug(f"Preprocessing {len(frames)} frames...")
         frames_tensor = self.preprocess_frames(frames).unsqueeze(0).to(self.device)
-        
+
         logging.info(f"Shape of frames_tensor: {frames_tensor.shape}")
 
         with torch.no_grad():
             logging.debug("Extracting features using the model...")
             features = self.model(frames_tensor)
-        
+
         logging.info("Feature extraction completed successfully.")
 
         return features
@@ -264,7 +272,7 @@ def process_annotations(annotations: Dict[str, Union[int, Dict]]) -> List[Action
     for action_id, action_data in annotations['Actions'].items():
         logging.info(f"Processing Action ID: {action_id}")
         action = ActionData(action_data)
-        if action.valid:  # Check if initialisation succeeded
+        if action.valid: 
             extract_clip_features(action)
             result.append(action)
         else:
