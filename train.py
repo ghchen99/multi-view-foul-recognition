@@ -1,6 +1,6 @@
 import os
 import logging
-from src.HDF5Reader import read_from_hdf5
+from feature_engineering.HDF5Reader import read_from_hdf5
 
 def resahape_action():
     input_file = 'data/dataset/train/train_features.h5'
