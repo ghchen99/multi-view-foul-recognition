@@ -110,6 +110,7 @@ def main():
             logging.info(f"Action ID: {index}")
             logging.info(f"Body part: {action['bodypart']}")
             for clip in action['clips']:
+                camera_angle = clip['Camera type']
                 video_features = clip['video_features']
                 
         print_field_occurrences(actions)
