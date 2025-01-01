@@ -70,6 +70,40 @@ def read_from_hdf5(input_file):
 
         logging.info(f"Read {len(actions)} actions from {input_file}")
         return actions
+    
+# Save extracted data to HDF5 file
+def save_to_hdf5(actions, output_file):
+    """
+    Saves action data and video features to an HDF5 file.
+    """
+    with h5py.File(output_file, 'w') as f:
+        for idx, action in enumerate(actions):
+            action_group = f.create_group(f"action_{idx}")
+
+            # Save attributes (non-clip data)
+            for attr in vars(action):
+                if attr != "clips":
+                    action_group.create_dataset(attr, data=getattr(action, attr))
+
+            # Create a group for clips
+            clips_group = action_group.create_group("clips")
+
+            # Process and store each clip
+            for clip_idx, clip in enumerate(action.clips):
+                clip_group = clips_group.create_group(f"clip_{clip_idx}")
+
+                # Save all clip attributes except video_features
+                for key, value in clip.items():
+                    if key != 'video_features':
+                        clip_group.create_dataset(key, data=value)
+
+                # Save video_features as a nested dataset
+                if clip['video_features'] is not None:
+                    video_features_group = clip_group.create_group('video_features')
+                    for feature_key, feature_value in clip['video_features'].items():
+                        video_features_group.create_dataset(feature_key, data=float(feature_value))
+
+    logging.info(f"Action data saved to {output_file}")
 
 # Example usage
 if __name__ == "__main__":
@@ -88,3 +122,5 @@ if __name__ == "__main__":
         
     else:
         logging.error(f"File not found: {input_file}")
+        
+        

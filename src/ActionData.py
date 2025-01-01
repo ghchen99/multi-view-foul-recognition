@@ -1,29 +1,12 @@
 import os
-import cv2
 import json
-import h5py
+import torch
 import logging
-import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+from HDF5 import save_to_hdf5
+from FeatureExtractor import FeatureExtractor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Load annotation file
-def load_annotations(file_path):
-    """
-    Loads annotations from a JSON file.
-    """
-    with open(file_path, 'r') as f:
-        return json.load(f)
-
-# Extract general dataset information
-def log_dataset_info(annotations):
-    """
-    Logs general information about the dataset.
-    """
-    logging.info(f"Dataset Set: {annotations['Set']}")
-    logging.info(f"Total Actions: {annotations['Number of actions']}")
 
 # ActionData class to store and process action parameters
 class ActionData:
@@ -103,113 +86,15 @@ class ActionData:
         """
         Extracts motion features from the clips associated with the action.
         """
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         for clip in self.clips:
+            extractor = FeatureExtractor(model_type='r3d_18', device=device)
             video_path = os.path.join('data', clip['Url'].lower() + '.mp4')
-            clip['video_features'] = extract_features(video_path) if os.path.exists(video_path) else None
+            clip['video_features'] = extractor.extract_features(video_path) if os.path.exists(video_path) else None
             if clip['video_features'] is None:
                 logging.error(f"Video file not found: {video_path}")
-
-# Extract motion-related features from a video
-def extract_features(video_path):
-    """
-    Extracts motion-related features from as sports video within the specified frame range.
-    """
-    cap = cv2.VideoCapture(video_path)
-
-    # Retrieve video properties
-    frame_count, height, width, fps = map(int, [
-        cap.get(cv2.CAP_PROP_FRAME_COUNT),
-        cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
-        cap.get(cv2.CAP_PROP_FRAME_WIDTH),
-        cap.get(cv2.CAP_PROP_FPS)
-    ])
-
-    logging.info(f"Video: {video_path}, Frames: {frame_count}, Resolution: {width}x{height}, FPS: {fps}")
-
-    # Frame range for analysis (frames 63 to 87)
-    start_frame = 63
-    end_frame = 87
-
-    # Initialize feature extraction variables
-    frame_diffs, optical_flow_magnitudes, keypoint_diffs = [], [], []
-
-    # Move to the starting frame
-    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
-    # Preload frames into memory
-    frames = []
-    for frame_counter in range(start_frame, end_frame + 1):
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            break
-        frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-
-    cap.release()
-
-    # Check if enough frames were loaded
-    if len(frames) < 2:
-        logging.error("Not enough frames loaded for processing.")
-        return {}
-
-    # Optical flow calculation parameters
-    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
-
-    # Keypoint detection parameters
-    feature_params = dict(maxCorners=1000, qualityLevel=0.01, minDistance=10)
-
-    def process_frame(i):
-        nonlocal frames
-
-        prev_gray = frames[i]
-        gray = frames[i + 1]
-
-        # Motion difference based on grayscale frames
-        frame_diff = np.sum(cv2.absdiff(prev_gray, gray))
-
-        # Optical Flow computation
-        optical_flow_mag = []
-        prev_pts = cv2.goodFeaturesToTrack(prev_gray, mask=None, **feature_params)
-        if prev_pts is not None:
-            next_pts, status, err = cv2.calcOpticalFlowPyrLK(prev_gray, gray, prev_pts, None, **lk_params)
-            if next_pts is not None:
-                flow = next_pts - prev_pts
-                optical_flow_mag.extend(np.linalg.norm(flow, axis=1))
-
-        # Keypoint detection
-        orb = cv2.ORB_create()
-        kp_prev = orb.detect(prev_gray, None)
-        kp_frame = orb.detect(gray, None)
-        keypoint_diff = len(kp_frame) - len(kp_prev)
-
-        return frame_diff, optical_flow_mag, keypoint_diff
-
-    # Parallel processing
-    with ThreadPoolExecutor() as executor:
-        results = list(executor.map(process_frame, range(len(frames) - 1)))
-
-    # Collect results
-    for frame_diff, optical_flow_mag, keypoint_diff in results:
-        frame_diffs.append(frame_diff)
-        optical_flow_magnitudes.extend(optical_flow_mag)
-        keypoint_diffs.append(keypoint_diff)
-
-    # Normalize features
-    def normalize_feature(feature):
-        return feature / np.max(feature) if len(feature) > 0 else feature
-
-    frame_diffs = normalize_feature(np.array(frame_diffs))
-    optical_flow_magnitudes = np.array(optical_flow_magnitudes)
-
-    return {
-        'mean_motion': np.mean(frame_diffs),
-        'std_motion': np.std(frame_diffs),
-        'max_motion': np.max(frame_diffs),
-        'mean_optical_flow': np.mean(optical_flow_magnitudes),
-        'std_optical_flow': np.std(optical_flow_magnitudes),
-        'max_optical_flow': np.max(optical_flow_magnitudes),
-        'mean_keypoint_diff': np.mean(keypoint_diffs),
-        'std_keypoint_diff': np.std(keypoint_diffs)
-    }
+    
 
 # Main processing function to extract features for all actions
 def process_annotations(annotations):
@@ -217,6 +102,7 @@ def process_annotations(annotations):
     Processes dataset annotations and extracts video features.
     """
     result = []
+    
     for action_id, action_data in annotations['Actions'].items():
         logging.info(f"Processing Action ID: {action_id}")
         action = ActionData(action_data)
@@ -228,45 +114,14 @@ def process_annotations(annotations):
 
     return result
 
-# Save extracted data to HDF5 file
-def save_to_hdf5(actions, output_file):
-    """
-    Saves action data and video features to an HDF5 file.
-    """
-    with h5py.File(output_file, 'w') as f:
-        for idx, action in enumerate(actions):
-            action_group = f.create_group(f"action_{idx}")
-
-            # Save attributes (non-clip data)
-            for attr in vars(action):
-                if attr != "clips":
-                    action_group.create_dataset(attr, data=getattr(action, attr))
-
-            # Create a group for clips
-            clips_group = action_group.create_group("clips")
-
-            # Process and store each clip
-            for clip_idx, clip in enumerate(action.clips):
-                clip_group = clips_group.create_group(f"clip_{clip_idx}")
-
-                # Save all clip attributes except video_features
-                for key, value in clip.items():
-                    if key != 'video_features':
-                        clip_group.create_dataset(key, data=value)
-
-                # Save video_features as a nested dataset
-                if clip['video_features'] is not None:
-                    video_features_group = clip_group.create_group('video_features')
-                    for feature_key, feature_value in clip['video_features'].items():
-                        video_features_group.create_dataset(feature_key, data=float(feature_value))
-
-    logging.info(f"Action data saved to {output_file}")
-
 # Main function to load, process, and save data
 def main():
-    annotations = load_annotations('data/dataset/train/annotations.json')
     
-    log_dataset_info(annotations)
+    with open('data/dataset/train/annotations.json', 'r') as f:
+        annotations = json.load(f)
+    
+    logging.info(f"Dataset Set: {annotations['Set']}")
+    logging.info(f"Total Actions: {annotations['Number of actions']}")
     actions = process_annotations(annotations)
     
     output_file = 'data/dataset/train/train_features.h5'
