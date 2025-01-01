@@ -269,7 +269,7 @@ def main():
     log_dataset_info(annotations)
     actions = process_annotations(annotations)
     
-    output_file = 'data/video_features.h5'
+    output_file = 'data/dataset/train/train_features.h5'
     save_to_hdf5(actions, output_file)
 
     logging.info(f"Done: Extracted features for {len(actions)} actions.")

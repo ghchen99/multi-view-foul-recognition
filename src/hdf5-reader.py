@@ -74,7 +74,7 @@ def read_from_hdf5(input_file):
 # Example usage
 if __name__ == "__main__":
     
-    input_file = 'data/video_features.h5'
+    input_file = 'data/dataset/train/train_features.h5'
     
     if os.path.exists(input_file):
         actions = read_from_hdf5(input_file)

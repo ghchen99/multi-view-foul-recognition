@@ -63,4 +63,3 @@ coverage/
 
 # data
 data/dataset/
-data/video_features.h5
