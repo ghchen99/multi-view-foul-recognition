@@ -14,7 +14,7 @@ from torchvision.models.video import (
 )
 from typing import List, Dict, Union
 from ActionData import ActionData
-from HDF5 import save_to_hdf5
+from HDF5Reader import save_to_hdf5
 
 
 class FeatureExtractor:
