@@ -3,3 +3,6 @@ python-dotenv
 opencv-python-headless
 seaborn
 h5py
+torch
+torchvision
+numpy<2.0

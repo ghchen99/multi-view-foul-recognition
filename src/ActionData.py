@@ -112,7 +112,7 @@ class ActionData:
 # Extract motion-related features from a video
 def extract_features(video_path):
     """
-    Extracts motion-related features from a sports video within the specified frame range.
+    Extracts motion-related features from as sports video within the specified frame range.
     """
     cap = cv2.VideoCapture(video_path)
 
