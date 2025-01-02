@@ -226,16 +226,33 @@ def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losse
     plt.show()
 
 # Save model function
-def save_model(model, file_path):
-    torch.save(model.state_dict(), file_path)
-    print(f"Model saved to {file_path}")
+def save_model(model, file_path, metadata):
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'metadata': metadata  # Save metadata (e.g., input size, class sizes)
+    }
+    torch.save(checkpoint, file_path)
+    print(f"Model and metadata saved to {file_path}")
 
 # Load model function
-def load_model(model, file_path):
-    model.load_state_dict(torch.load(file_path))
-    model.eval()  # Set the model to evaluation mode
-    print(f"Model loaded from {file_path}")
+def load_model(file_path):
+    checkpoint = torch.load(file_path)
+    metadata = checkpoint['metadata']
+
+    # Rebuild model architecture using metadata
+    model = MultiTaskModel(
+        input_size=metadata['input_size'],
+        action_classes=metadata['action_classes'],
+        bodypart_classes=metadata['bodypart_classes'],
+        offence_classes=metadata['offence_classes'],
+        touchball_classes=metadata['touchball_classes'],
+        trytoplay_classes=metadata['trytoplay_classes']
+    )
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+    print(f"Model loaded from {file_path} with metadata: {metadata}")
     return model
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -256,48 +273,16 @@ def main():
     
     model = train_model(X_train, y_train, class_weights, epochs=100, batch_size=64, learning_rate=0.0005)  # Lower learning rate
     
-    # Step 2: Save the trained model
-    save_model(model, "foul_detection_model.pth")
-
-    # Step 3: Load the model from file for inference or further training
-    model_loaded = MultiTaskModel(
-        input_size=X_train.shape[1], 
-        action_classes=len(class_weights['actionclass']),
-        bodypart_classes=len(class_weights['bodypart']),
-        offence_classes=len(class_weights['offence']),
-        touchball_classes=len(class_weights['touchball']),
-        trytoplay_classes=len(class_weights['trytoplay'])
-    )
-    model_loaded = load_model(model_loaded, "foul_detection_model.pth")
+    metadata = {
+        'input_size': X_train.shape[1],
+        'action_classes': len(class_weights['actionclass']),
+        'bodypart_classes': len(class_weights['bodypart']),
+        'offence_classes': len(class_weights['offence']),
+        'touchball_classes': len(class_weights['touchball']),
+        'trytoplay_classes': len(class_weights['trytoplay'])
+    }
     
-    input_file = 'data/dataset/test/test_features.h5'
-    X_test, _ = preprocessor.process_data(input_file)
-
-    model_loaded.eval()
-    
-    # Step 3: Forward pass through the model
-    with torch.no_grad():  # No need to compute gradients during inference
-        actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred = model_loaded(X_test)
-
-    # Step 4: Convert the predictions (if needed, e.g., for classification)
-    # If you want the class labels (i.e., indices of the highest probability)
-    actionclass_pred_labels = torch.argmax(actionclass_pred, dim=1)
-    bodypart_pred_labels = torch.argmax(bodypart_pred, dim=1)
-    offence_pred_labels = torch.argmax(offence_pred, dim=1)
-    touchball_pred_labels = torch.argmax(touchball_pred, dim=1)
-    trytoplay_pred_labels = torch.argmax(trytoplay_pred, dim=1)
-    
-    # Example usage
-    decoder = Decoder()
-
-    # Decode and print results
-    decoder.decode_predictions(
-        actionclass_pred_labels,
-        bodypart_pred_labels,
-        offence_pred_labels,
-        touchball_pred_labels,
-        trytoplay_pred_labels
-    )
+    save_model(model, "foul_detection_model.pth", metadata)
 
 if __name__ == "__main__":
     main()

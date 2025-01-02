@@ -13,8 +13,8 @@ from torchvision.models.video import (
     mvit_v2_s, MViT_V2_S_Weights, mvit_v1_b, MViT_V1_B_Weights
 )
 from typing import List, Dict, Union, Optional
-from ActionData import ActionData
-from HDF5Reader import save_to_hdf5
+from feature_engineering.ActionData import ActionData
+from feature_engineering.HDF5Reader import save_to_hdf5
 
 class FeatureExtractor:
     def __init__(self, model_type: str = 'r3d_18', device: str = 'cpu') -> None:
