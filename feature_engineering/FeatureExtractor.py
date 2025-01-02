@@ -195,7 +195,7 @@ def main() -> None:
     
     logging.info(f"Dataset Set: {annotations['Set']}")
     logging.info(f"Total Actions: {annotations['Number of actions']}")
-    actions = process_annotations(annotations, max_actions=3)
+    actions = process_annotations(annotations, max_actions=100)
     
     output_file = 'data/dataset/train/train_features.h5'
     save_to_hdf5(actions, output_file)
