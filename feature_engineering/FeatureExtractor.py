@@ -231,30 +231,24 @@ def process_inference_video(video_path: str, replay_speed: float, output_file: s
     logging.info(f"Saved inference features to: {output_file}")
 
 def main() -> None:
+    
+    # TODO: Run on all datasets
 
-    '''
     # Train dataset
     train_annotations_file = 'data/dataset/train/annotations.json'
     train_output_file = 'data/dataset/train/train_features.h5'
-    process_and_save_data_set(train_annotations_file, max_actions=500, output_file=train_output_file)
-    '''
+    process_and_save_data_set(train_annotations_file, max_actions=None, output_file=train_output_file)
     
     # Validation dataset
     validation_annotations_file = 'data/dataset/valid/annotations.json'
     validation_output_file = 'data/dataset/valid/validation_features.h5'
-    process_and_save_data_set(validation_annotations_file, max_actions=50, output_file=validation_output_file)
+    process_and_save_data_set(validation_annotations_file, max_actions=None, output_file=validation_output_file)
     
 
     # Test dataset
     test_annotations_file = 'data/dataset/test/annotations.json'
     test_output_file = 'data/dataset/test/test_features.h5'
-    process_and_save_data_set(test_annotations_file, max_actions=1, output_file=test_output_file)
-    
-    # TODO: Inference script!
-    inference_file = 'data/dataset/inference/inference_features.h5'
-    video_path = 'data/dataset/inference/test_action_5_1.4_replay_speed.mp4'
-    replay_speed = 1.4
-    process_inference_video(video_path, replay_speed, inference_file)
+    process_and_save_data_set(test_annotations_file, max_actions=None, output_file=test_output_file)
 
 
 if __name__ == "__main__":
