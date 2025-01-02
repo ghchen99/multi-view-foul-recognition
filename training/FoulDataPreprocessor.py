@@ -28,6 +28,14 @@ class FoulDataPreprocessor:
             b'No': 0, b'Yes': 1
         }
         
+        self.severity_map = {
+            b'1.0': 0,
+            b'2.0': 1,
+            b'3.0': 2,
+            b'4.0': 3,
+            b'5.0': 4
+        }
+        
         self.target_camera = b'Close-up player or field referee'
 
     def get_class_weights(self, labels, num_classes):
@@ -50,7 +58,7 @@ class FoulDataPreprocessor:
             'actionclass': self.action_class_map[action['actionclass']],
             'bodypart': self.bodypart_map[action['bodypart']],
             'offence': self.offence_map[action['offence']],
-            'severity': float(action['severity'].decode('utf-8').strip('.0')),
+            'severity': self.severity_map[action['severity']],
             'touchball': self.touchball_map[action['touchball']],
             'trytoplay': self.trytoplay_map[action['trytoplay']]
         }
@@ -146,7 +154,8 @@ def main():
             'bodypart': preprocessor.get_class_weights(y['bodypart'], len(preprocessor.bodypart_map)),
             'offence': preprocessor.get_class_weights(y['offence'], len(preprocessor.offence_map)),
             'touchball': preprocessor.get_class_weights(y['touchball'], len(preprocessor.touchball_map)),
-            'trytoplay': preprocessor.get_class_weights(y['trytoplay'], len(preprocessor.trytoplay_map))
+            'trytoplay': preprocessor.get_class_weights(y['trytoplay'], len(preprocessor.trytoplay_map)),
+            'severity': preprocessor.get_class_weights(y['severity'], len(preprocessor.severity_map))
         }
         return X, y, class_weights
 
