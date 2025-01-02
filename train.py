@@ -268,6 +268,30 @@ def main():
         trytoplay_classes=len(class_weights['trytoplay'])
     )
     model_loaded = load_model(model_loaded, "foul_detection_model.pth")
+    
+    input_file = 'data/dataset/test/test_features.h5'
+    X_test, _ = preprocessor.process_data(input_file)
+
+    model_loaded.eval()
+    
+    # Step 3: Forward pass through the model
+    with torch.no_grad():  # No need to compute gradients during inference
+        actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred = model_loaded(X_test)
+
+    # Step 4: Convert the predictions (if needed, e.g., for classification)
+    # If you want the class labels (i.e., indices of the highest probability)
+    actionclass_pred_labels = torch.argmax(actionclass_pred, dim=1)
+    bodypart_pred_labels = torch.argmax(bodypart_pred, dim=1)
+    offence_pred_labels = torch.argmax(offence_pred, dim=1)
+    touchball_pred_labels = torch.argmax(touchball_pred, dim=1)
+    trytoplay_pred_labels = torch.argmax(trytoplay_pred, dim=1)
+
+    # Now you can use the predictions as needed
+    print(f"Action Class Prediction: {actionclass_pred_labels}")
+    print(f"Body Part Prediction: {bodypart_pred_labels}")
+    print(f"Offence Prediction: {offence_pred_labels}")
+    print(f"Touchball Prediction: {touchball_pred_labels}")
+    print(f"Try to Play Prediction: {trytoplay_pred_labels}")
 
 if __name__ == "__main__":
     main()
