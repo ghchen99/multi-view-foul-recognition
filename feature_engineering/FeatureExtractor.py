@@ -13,8 +13,8 @@ from torchvision.models.video import (
     mvit_v2_s, MViT_V2_S_Weights, mvit_v1_b, MViT_V1_B_Weights
 )
 from typing import List, Dict, Union, Optional
-from ActionData import ActionData
-from HDF5Reader import save_to_hdf5
+from feature_engineering.ActionData import ActionData
+from feature_engineering.HDF5Reader import save_to_hdf5
 
 class FeatureExtractor:
     def __init__(self, model_type: str = 'r3d_18', device: str = 'cpu') -> None:
@@ -185,22 +185,70 @@ def process_annotations(annotations: Dict[str, Union[int, Dict]], max_actions: O
 
     return result
 
-
-def main() -> None:
+def load_annotations(file_path: str) -> dict:
     """
-    Main function to load, process, and save data.
+    Loads the annotations from a JSON file.
     """
-    with open('data/dataset/train/annotations.json', 'r') as f:
+    with open(file_path, 'r') as f:
         annotations = json.load(f)
-    
+    return annotations
+
+def process_data_set(annotations: dict, max_actions: int) -> list:
+    """
+    Processes the annotations and extracts the actions based on the max_actions parameter.
+    """
     logging.info(f"Dataset Set: {annotations['Set']}")
     logging.info(f"Total Actions: {annotations['Number of actions']}")
-    actions = process_annotations(annotations, max_actions=500)
-    
-    output_file = 'data/dataset/train/train_features.h5'
-    save_to_hdf5(actions, output_file)
+    actions = process_annotations(annotations, max_actions=max_actions)
+    return actions
 
+def save_extracted_features(actions: list, output_file: str) -> None:
+    """
+    Saves the extracted actions into an HDF5 file.
+    """
+    save_to_hdf5(actions, output_file)
     logging.info(f"Done: Extracted features for {len(actions)} actions.")
+
+def process_and_save_data_set(annotations_file: str, max_actions: int, output_file: str) -> None:
+    """
+    High-level function to load, process, and save dataset features for train, validation, or test.
+    """
+    annotations = load_annotations(annotations_file)
+    actions = process_data_set(annotations, max_actions)
+    save_extracted_features(actions, output_file)
+    
+def process_inference_video(video_path: str, replay_speed: float, output_file: str) -> None:
+    """
+    Processes a single video for inference and saves the features to an HDF5 file.
+    """
+    logging.info(f"Processing inference video: {video_path}")
+    
+    extractor = FeatureExtractor(model_type='r3d_18', device='cpu')
+    features = extractor.extract_features(video_path)
+    
+    save_extracted_features([ActionData({'video_features': features, 'replay_speed': replay_speed})], output_file)
+    
+    logging.info(f"Saved inference features to: {output_file}")
+
+def main() -> None:
+    
+    # TODO: Run on all datasets
+
+    # Train dataset
+    train_annotations_file = 'data/dataset/train/annotations.json'
+    train_output_file = 'data/dataset/train/train_features.h5'
+    process_and_save_data_set(train_annotations_file, max_actions=None, output_file=train_output_file)
+    
+    # Validation dataset
+    validation_annotations_file = 'data/dataset/valid/annotations.json'
+    validation_output_file = 'data/dataset/valid/validation_features.h5'
+    process_and_save_data_set(validation_annotations_file, max_actions=None, output_file=validation_output_file)
+    
+
+    # Test dataset
+    test_annotations_file = 'data/dataset/test/annotations.json'
+    test_output_file = 'data/dataset/test/test_features.h5'
+    process_and_save_data_set(test_annotations_file, max_actions=None, output_file=test_output_file)
 
 
 if __name__ == "__main__":
