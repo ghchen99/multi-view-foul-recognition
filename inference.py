@@ -55,7 +55,7 @@ def main() -> None:
     model.eval()
 
     with torch.no_grad():  # No need to compute gradients during inference
-        actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred = model(X_test)
+        actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred = model(X_test)
 
     # Get predicted classes and probabilities
     def get_predictions_and_probs(predictions):
@@ -69,6 +69,7 @@ def main() -> None:
     offence_pred_labels, offence_probs = get_predictions_and_probs(offence_pred)
     touchball_pred_labels, touchball_probs = get_predictions_and_probs(touchball_pred)
     trytoplay_pred_labels, trytoplay_probs = get_predictions_and_probs(trytoplay_pred)
+    severity_pred_labels, severity_probs = get_predictions_and_probs(severity_pred)
 
     # Example usage
     decoder = Decoder()
@@ -79,7 +80,8 @@ def main() -> None:
         bodypart_pred_labels,
         offence_pred_labels,
         touchball_pred_labels,
-        trytoplay_pred_labels
+        trytoplay_pred_labels,
+        severity_pred_labels
     )
 
     # Print probabilities for each prediction
@@ -89,6 +91,7 @@ def main() -> None:
     print(f"Offence: {offence_probs}")
     print(f"Touch ball: {touchball_probs}")
     print(f"Try to play: {trytoplay_probs}")
+    print(f"Severity: {severity_probs}")
 
 
 if __name__ == "__main__":

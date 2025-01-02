@@ -9,7 +9,7 @@ from training.FoulDataPreprocessor import FoulDataPreprocessor
 from training.Decoder import Decoder
 
 class MultiTaskModel(nn.Module):
-    def __init__(self, input_size, action_classes, bodypart_classes, offence_classes, touchball_classes, trytoplay_classes):
+    def __init__(self, input_size, action_classes, bodypart_classes, offence_classes, touchball_classes, trytoplay_classes, severity_classes):
         super(MultiTaskModel, self).__init__()
 
         # Shared input layers with Batch Normalization
@@ -26,6 +26,7 @@ class MultiTaskModel(nn.Module):
         self.fc_offence = nn.Linear(128, offence_classes)
         self.fc_touchball = nn.Linear(128, touchball_classes)
         self.fc_trytoplay = nn.Linear(128, trytoplay_classes)
+        self.fc_severity = nn.Linear(128, severity_classes)
 
         # Initialize weights
         self._initialize_weights()
@@ -50,10 +51,11 @@ class MultiTaskModel(nn.Module):
         offence_output = self.fc_offence(x)
         touchball_output = self.fc_touchball(x)
         trytoplay_output = self.fc_trytoplay(x)
+        severity_output = self.fc_severity(x)
         
-        return actionclass_output, bodypart_output, offence_output, touchball_output, trytoplay_output
+        return actionclass_output, bodypart_output, offence_output, touchball_output, trytoplay_output, severity_output
 
-def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learning_rate=0.001):
+def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, batch_size=64, learning_rate=0.001):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Convert inputs and labels to tensors and move them to device
@@ -67,7 +69,8 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
         bodypart_classes=len(class_weights['bodypart']),
         offence_classes=len(class_weights['offence']),
         touchball_classes=len(class_weights['touchball']),
-        trytoplay_classes=len(class_weights['trytoplay'])
+        trytoplay_classes=len(class_weights['trytoplay']),
+        severity_classes=severity_classes  # Adding severity classes
     ).to(device)
 
     # Define loss functions and optimizer
@@ -76,6 +79,7 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
     criterion_offence = nn.CrossEntropyLoss(weight=class_weights['offence'].to(device))
     criterion_touchball = nn.CrossEntropyLoss(weight=class_weights['touchball'].to(device))
     criterion_trytoplay = nn.CrossEntropyLoss(weight=class_weights['trytoplay'].to(device))
+    criterion_severity = nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))  # Add loss for severity
 
     # AdamW optimizer with weight decay for regularization
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-5)
@@ -89,7 +93,7 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
     model.train()
     
     # Create DataLoader for batching
-    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], y_train['touchball'], y_train['trytoplay'])
+    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], y_train['touchball'], y_train['trytoplay'], y_train['severity'])
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Initialize lists to store losses for plotting
@@ -99,6 +103,7 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
     offence_losses = []
     touchball_losses = []
     trytoplay_losses = []
+    severity_losses = []  # Add list for severity losses
 
     for epoch in range(epochs):
         total_loss = 0
@@ -107,15 +112,17 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
         total_loss_offence = 0
         total_loss_touchball = 0
         total_loss_trytoplay = 0
+        total_loss_severity = 0  # Add variable for severity loss
         
-        for inputs, actionclass_labels, bodypart_labels, offence_labels, touchball_labels, trytoplay_labels in data_loader:
+        for inputs, actionclass_labels, bodypart_labels, offence_labels, touchball_labels, trytoplay_labels, severity_labels in data_loader:
             inputs = inputs.to(device)
             actionclass_labels = actionclass_labels.to(device)
             bodypart_labels = bodypart_labels.to(device)
             offence_labels = offence_labels.to(device)
             touchball_labels = touchball_labels.to(device)
             trytoplay_labels = trytoplay_labels.to(device)
-
+            severity_labels = severity_labels.to(device)  # Add severity labels
+            
             optimizer.zero_grad()
             
             # Forward pass
@@ -127,9 +134,10 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
             loss_offence = criterion_offence(outputs[2], offence_labels)
             loss_touchball = criterion_touchball(outputs[3], touchball_labels)
             loss_trytoplay = criterion_trytoplay(outputs[4], trytoplay_labels)
+            loss_severity = criterion_severity(outputs[5], severity_labels)  # Calculate loss for severity
             
             # Total loss (with optional weighting for tasks)
-            total_loss_batch = loss_actionclass + loss_bodypart + loss_offence + loss_touchball + loss_trytoplay
+            total_loss_batch = loss_actionclass + loss_bodypart + loss_offence + loss_touchball + loss_trytoplay + loss_severity
             total_loss_batch.backward()
             
             # Gradient clipping
@@ -143,12 +151,10 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
             total_loss_offence += loss_offence.item()
             total_loss_touchball += loss_touchball.item()
             total_loss_trytoplay += loss_trytoplay.item()
+            total_loss_severity += loss_severity.item()  # Add severity loss
 
         # Step learning rate scheduler
         scheduler.step(total_loss)
-
-        # Log the individual losses for the epoch
-        
 
         # Append loss values to lists for plotting
         total_losses.append(total_loss)
@@ -157,6 +163,7 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
         offence_losses.append(total_loss_offence)
         touchball_losses.append(total_loss_touchball)
         trytoplay_losses.append(total_loss_trytoplay)
+        severity_losses.append(total_loss_severity)  # Append severity loss
 
         logging.info(f"Epoch [{epoch + 1}/{epochs}], "
                     f"Total Loss: {total_loss:.4f}, "
@@ -164,15 +171,17 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
                     f"Body Part Loss: {total_loss_bodypart:.4f}, "
                     f"Offence Loss: {total_loss_offence:.4f}, "
                     f"Touchball Loss: {total_loss_touchball:.4f}, "
-                    f"Try To Play Loss: {total_loss_trytoplay:.4f}")
+                    f"Try To Play Loss: {total_loss_trytoplay:.4f}, "
+                    f"Severity Loss: {total_loss_severity:.4f}")  # Log severity loss
     
     # After training, plot the loss curves
-    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses)
+    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses)
     
     return model
 
 
-def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses):
+
+def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses):
     """
     Plot the training loss curves for each task.
     """
@@ -181,49 +190,57 @@ def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losse
     plt.figure(figsize=(12, 8))
     
     # Plot total loss
-    plt.subplot(2, 3, 1)
+    plt.subplot(2, 4, 1)
     plt.plot(epochs, total_losses, label='Total Loss', color='blue')
     plt.title('Total Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     # Plot action class loss
-    plt.subplot(2, 3, 2)
+    plt.subplot(2, 4, 2)
     plt.plot(epochs, actionclass_losses, label='Action Class Loss', color='red')
     plt.title('Action Class Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     # Plot body part loss
-    plt.subplot(2, 3, 3)
+    plt.subplot(2, 4, 3)
     plt.plot(epochs, bodypart_losses, label='Body Part Loss', color='green')
     plt.title('Body Part Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     # Plot offence loss
-    plt.subplot(2, 3, 4)
+    plt.subplot(2, 4, 4)
     plt.plot(epochs, offence_losses, label='Offence Loss', color='purple')
     plt.title('Offence Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     # Plot touchball loss
-    plt.subplot(2, 3, 5)
+    plt.subplot(2, 4, 5)
     plt.plot(epochs, touchball_losses, label='Touchball Loss', color='orange')
     plt.title('Touchball Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
     # Plot try-to-play loss
-    plt.subplot(2, 3, 6)
+    plt.subplot(2, 4, 6)
     plt.plot(epochs, trytoplay_losses, label='Try To Play Loss', color='brown')
     plt.title('Try To Play Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
 
+    # Plot severity loss
+    plt.subplot(2, 4, 7)
+    plt.plot(epochs, severity_losses, label='Severity Loss', color='cyan')
+    plt.title('Severity Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
     plt.tight_layout()
     plt.show()
+
 
 # Save model function
 def save_model(model, file_path, metadata):
@@ -246,7 +263,8 @@ def load_model(file_path):
         bodypart_classes=metadata['bodypart_classes'],
         offence_classes=metadata['offence_classes'],
         touchball_classes=metadata['touchball_classes'],
-        trytoplay_classes=metadata['trytoplay_classes']
+        trytoplay_classes=metadata['trytoplay_classes'],
+        severity_classes=metadata['severity_classes'] 
     )
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
@@ -262,16 +280,17 @@ def main():
     X_train, y_train = preprocessor.process_data(input_file)
     
     if X_train is not None:
-        # Calculate class weights for each task
+        # Calculate class weights for each task, including severity
         class_weights = {
             'actionclass': preprocessor.get_class_weights(y_train['actionclass'], len(preprocessor.action_class_map)),
             'bodypart': preprocessor.get_class_weights(y_train['bodypart'], len(preprocessor.bodypart_map)),
             'offence': preprocessor.get_class_weights(y_train['offence'], len(preprocessor.offence_map)),
             'touchball': preprocessor.get_class_weights(y_train['touchball'], len(preprocessor.touchball_map)),
-            'trytoplay': preprocessor.get_class_weights(y_train['trytoplay'], len(preprocessor.trytoplay_map))
+            'trytoplay': preprocessor.get_class_weights(y_train['trytoplay'], len(preprocessor.trytoplay_map)),
+            'severity': preprocessor.get_class_weights(y_train['severity'], len(preprocessor.severity_map))  # Add severity class weights
         }
     
-    model = train_model(X_train, y_train, class_weights, epochs=100, batch_size=64, learning_rate=0.0005)  # Lower learning rate
+    model = train_model(X_train, y_train, class_weights, severity_classes=len(preprocessor.severity_map), epochs=100, batch_size=64, learning_rate=0.0005)
     
     metadata = {
         'input_size': X_train.shape[1],
@@ -279,10 +298,15 @@ def main():
         'bodypart_classes': len(class_weights['bodypart']),
         'offence_classes': len(class_weights['offence']),
         'touchball_classes': len(class_weights['touchball']),
-        'trytoplay_classes': len(class_weights['trytoplay'])
+        'trytoplay_classes': len(class_weights['trytoplay']),
+        'severity_classes': len(class_weights['severity'])  # Add severity to metadata
     }
     
     save_model(model, "foul_detection_model.pth", metadata)
+
+if __name__ == "__main__":
+    main()
+
 
 if __name__ == "__main__":
     main()

@@ -25,14 +25,19 @@ class Decoder:
         self.trytoplay_map = {
             0: b'No', 1: b'Yes'
         }
+        
+        self.severity_map = {
+            0: b'1.0 No card', 1: b'2.0 Borderline No/Yellow', 2: b'3.0 Yellow card', 3: b'4.0 Yellow/ borderline Red', 4: b'5.0 Red card'
+        }
 
-    def decode_predictions(self, actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred):
+    def decode_predictions(self, actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred):
         # Decode predictions
         actionclass = [self.action_class_map[label.item()] for label in actionclass_pred]
         bodypart = [self.bodypart_map[label.item()] for label in bodypart_pred]
         offence = [self.offence_map[label.item()] for label in offence_pred]
         touchball = [self.touchball_map[label.item()] for label in touchball_pred]
         trytoplay = [self.trytoplay_map[label.item()] for label in trytoplay_pred]
+        severity_pred = [self.severity_map[label.item()] for label in severity_pred]
 
         # Print the decoded outputs
         print("Decoded Predictions:")
@@ -41,3 +46,4 @@ class Decoder:
         print(f"Offence: {[x.decode('utf-8') for x in offence]}")
         print(f"Touchball: {[x.decode('utf-8') for x in touchball]}")
         print(f"Try to Play: {[x.decode('utf-8') for x in trytoplay]}")
+        print(f"Severity: {[x.decode('utf-8') for x in severity_pred]}")
