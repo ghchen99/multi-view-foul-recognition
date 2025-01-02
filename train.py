@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 from training.FoulDataPreprocessor import FoulDataPreprocessor
+from training.Decoder import Decoder
 
 class MultiTaskModel(nn.Module):
     def __init__(self, input_size, action_classes, bodypart_classes, offence_classes, touchball_classes, trytoplay_classes):
@@ -285,13 +286,18 @@ def main():
     offence_pred_labels = torch.argmax(offence_pred, dim=1)
     touchball_pred_labels = torch.argmax(touchball_pred, dim=1)
     trytoplay_pred_labels = torch.argmax(trytoplay_pred, dim=1)
+    
+    # Example usage
+    decoder = Decoder()
 
-    # Now you can use the predictions as needed
-    print(f"Action Class Prediction: {actionclass_pred_labels}")
-    print(f"Body Part Prediction: {bodypart_pred_labels}")
-    print(f"Offence Prediction: {offence_pred_labels}")
-    print(f"Touchball Prediction: {touchball_pred_labels}")
-    print(f"Try to Play Prediction: {trytoplay_pred_labels}")
+    # Decode and print results
+    decoder.decode_predictions(
+        actionclass_pred_labels,
+        bodypart_pred_labels,
+        offence_pred_labels,
+        touchball_pred_labels,
+        trytoplay_pred_labels
+    )
 
 if __name__ == "__main__":
     main()
