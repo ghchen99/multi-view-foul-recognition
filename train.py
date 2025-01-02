@@ -20,7 +20,7 @@ def resahape_action():
                 camera_angle = clip['Camera type'] # type bytes
                 replay_speed = clip['Replay speed'] # numpy.float64
                 video_features = clip['video_features'] # type torch.Tensor (1, 512)
-                continue
+                continue # test
     else:
         logging.error(f"File not found: {input_file}")
 
