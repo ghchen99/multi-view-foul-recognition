@@ -57,13 +57,19 @@ def main() -> None:
     with torch.no_grad():  # No need to compute gradients during inference
         actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred = model(X_test)
 
-    # If you want the class labels (i.e., indices of the highest probability)
-    actionclass_pred_labels = torch.argmax(actionclass_pred, dim=1)
-    bodypart_pred_labels = torch.argmax(bodypart_pred, dim=1)
-    offence_pred_labels = torch.argmax(offence_pred, dim=1)
-    touchball_pred_labels = torch.argmax(touchball_pred, dim=1)
-    trytoplay_pred_labels = torch.argmax(trytoplay_pred, dim=1)
-    
+    # Get predicted classes and probabilities
+    def get_predictions_and_probs(predictions):
+        probs = torch.softmax(predictions, dim=1)
+        labels = torch.argmax(probs, dim=1)
+        max_probs = probs.max(dim=1).values
+        return labels, max_probs
+
+    actionclass_pred_labels, actionclass_probs = get_predictions_and_probs(actionclass_pred)
+    bodypart_pred_labels, bodypart_probs = get_predictions_and_probs(bodypart_pred)
+    offence_pred_labels, offence_probs = get_predictions_and_probs(offence_pred)
+    touchball_pred_labels, touchball_probs = get_predictions_and_probs(touchball_pred)
+    trytoplay_pred_labels, trytoplay_probs = get_predictions_and_probs(trytoplay_pred)
+
     # Example usage
     decoder = Decoder()
 
@@ -75,6 +81,14 @@ def main() -> None:
         touchball_pred_labels,
         trytoplay_pred_labels
     )
+
+    # Print probabilities for each prediction
+    print("Probabilities:")
+    print(f"Action class: {actionclass_probs}")
+    print(f"Body part: {bodypart_probs}")
+    print(f"Offence: {offence_probs}")
+    print(f"Touch ball: {touchball_probs}")
+    print(f"Try to play: {trytoplay_probs}")
 
 
 if __name__ == "__main__":
