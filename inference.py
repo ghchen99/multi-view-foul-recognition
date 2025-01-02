@@ -42,7 +42,7 @@ def process_inference_video(video_path: str, replay_speed: float, output_file: s
 def main() -> None:
 
     inference_file = 'data/dataset/inference/inference_features.h5'
-    video_path = 'data/dataset/inference/test_action_5_1.4_replay_speed.mp4'
+    video_path = 'data/dataset/inference/offence_underbody_tackling_3.0_trytoplay_notouchball.mp4'
     replay_speed = 1.4
     process_inference_video(video_path, replay_speed, inference_file)
     
@@ -57,42 +57,18 @@ def main() -> None:
     with torch.no_grad():  # No need to compute gradients during inference
         actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred = model(X_test)
 
-    # Get predicted classes and probabilities
-    def get_predictions_and_probs(predictions):
-        probs = torch.softmax(predictions, dim=1)
-        labels = torch.argmax(probs, dim=1)
-        max_probs = probs.max(dim=1).values
-        return labels, max_probs
-
-    actionclass_pred_labels, actionclass_probs = get_predictions_and_probs(actionclass_pred)
-    bodypart_pred_labels, bodypart_probs = get_predictions_and_probs(bodypart_pred)
-    offence_pred_labels, offence_probs = get_predictions_and_probs(offence_pred)
-    touchball_pred_labels, touchball_probs = get_predictions_and_probs(touchball_pred)
-    trytoplay_pred_labels, trytoplay_probs = get_predictions_and_probs(trytoplay_pred)
-    severity_pred_labels, severity_probs = get_predictions_and_probs(severity_pred)
-
     # Example usage
     decoder = Decoder()
 
-    # Decode and print results
+    # Decode predictions along with probabilities inside the decoder
     decoder.decode_predictions(
-        actionclass_pred_labels,
-        bodypart_pred_labels,
-        offence_pred_labels,
-        touchball_pred_labels,
-        trytoplay_pred_labels,
-        severity_pred_labels
+        actionclass_pred,
+        bodypart_pred,
+        offence_pred,
+        touchball_pred,
+        trytoplay_pred,
+        severity_pred
     )
-
-    # Print probabilities for each prediction
-    print("Probabilities:")
-    print(f"Action class: {actionclass_probs}")
-    print(f"Body part: {bodypart_probs}")
-    print(f"Offence: {offence_probs}")
-    print(f"Touch ball: {touchball_probs}")
-    print(f"Try to play: {trytoplay_probs}")
-    print(f"Severity: {severity_probs}")
-
 
 if __name__ == "__main__":
     main()
