@@ -147,13 +147,7 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
         scheduler.step(total_loss)
 
         # Log the individual losses for the epoch
-        logging.info(f"Epoch [{epoch + 1}/{epochs}]")
-        logging.info(f"Total Loss: {total_loss:.4f}")
-        logging.info(f"Action Class Loss: {total_loss_actionclass:.4f}")
-        logging.info(f"Body Part Loss: {total_loss_bodypart:.4f}")
-        logging.info(f"Offence Loss: {total_loss_offence:.4f}")
-        logging.info(f"Touchball Loss: {total_loss_touchball:.4f}")
-        logging.info(f"Try To Play Loss: {total_loss_trytoplay:.4f}")
+        
 
         # Append loss values to lists for plotting
         total_losses.append(total_loss)
@@ -163,8 +157,13 @@ def train_model(X_train, y_train, class_weights, epochs=20, batch_size=64, learn
         touchball_losses.append(total_loss_touchball)
         trytoplay_losses.append(total_loss_trytoplay)
 
-        if (epoch + 1) % 10 == 0:
-            logging.info(f"Epoch [{epoch + 1}/{epochs}], Loss: {total_loss:.4f}")
+        logging.info(f"Epoch [{epoch + 1}/{epochs}], "
+                    f"Total Loss: {total_loss:.4f}, "
+                    f"Action Class Loss: {total_loss_actionclass:.4f}, "
+                    f"Body Part Loss: {total_loss_bodypart:.4f}, "
+                    f"Offence Loss: {total_loss_offence:.4f}, "
+                    f"Touchball Loss: {total_loss_touchball:.4f}, "
+                    f"Try To Play Loss: {total_loss_trytoplay:.4f}")
     
     # After training, plot the loss curves
     plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses)
