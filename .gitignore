@@ -63,3 +63,5 @@ coverage/
 
 # data
 data/dataset/
+
+foul_detection_model.pth
