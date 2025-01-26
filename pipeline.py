@@ -218,12 +218,12 @@ def main():
         pipeline.inference(model, test_features)
         
         # 4. Optional: Run inference on a single video
-        video_path = 'data/dataset/inference/offence_underbody_tackling_3.0_trytoplay_notouchball.mp4'
+        video_path = 'data/dataset/inference/testaction5_clip1.mp4'
         if os.path.exists(video_path):
             logging.info("Running inference on single video...")
             inference_features = pipeline.process_video_for_inference(
                 video_path,
-                replay_speed=1.0
+                replay_speed=1.4
             )
             pipeline.inference(model, inference_features)
             
