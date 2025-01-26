@@ -278,6 +278,7 @@ def main():
     input_file = 'data/dataset/train/train_features.h5'
     
     X_train, y_train = preprocessor.process_data(input_file)
+    # TODO: Add validation data processing
     
     if X_train is not None:
         # Calculate class weights for each task, including severity
