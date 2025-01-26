@@ -1,6 +1,1275 @@
 Directory Structure:
 ===================
 
+LICENSE
+README.md
+data
+└── helper
+    ├── mvfouls-download.py
+    └── mvfouls-explore.py
+feature_engineering
+├── ActionData.py
+├── FeatureExtractor.py
+└── HDF5Reader.py
+inference.py
+pipeline.py
+requirements.txt
+snapshot.py
+snapshot.txt
+train.py
+training
+├── Decoder.py
+└── FoulDataPreprocessor.py
+
+File Contents:
+=============
+
+--- LICENSE ---
+MIT License
+
+Copyright (c) 2024 George Chen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+--- README.md ---
+# Multi-View Foul Recognition
+
+Sick of refs getting it wrong?
+
+Introducing Multi-View Foul Recognition, the AI-powered solution designed to make football refereeing more accurate and fair. By leveraging multiple camera angles, this system can detect fouls with precision and assist referees in making real-time decisions based on comprehensive video analysis. Say goodbye to missed calls and controversial decisions!
+
+## 🚀 Features
+
+* Multi-Angle Video Analysis: Analyzes footage from multiple camera angles to accurately detect fouls in football matches.
+* AI-Powered Recognition: Uses machine learning to distinguish between different types of fouls, ensuring consistent and fair officiating.
+* Real-Time Decision Support: Provides immediate feedback to referees, reducing human error and enhancing match integrity.
+* Scalable: Easily integrates with existing camera setups to process live footage or pre-recorded matches.
+* Open Source: Free for anyone to use, modify, and contribute to the development of more accurate foul detection systems.
+
+## 📚 Dataset
+
+This project uses the SoccerNet-MVFoul dataset, which can be downloaded via API:
+
+```bash
+from SoccerNet.Downloader import SoccerNetDownloader as SNdl
+mySNdl = SNdl(LocalDirectory="path/to/SoccerNet")
+mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge"], password="enter password")
+```
+
+The incident tends to occur close to frame 75 (3 seconds) so previous studies have taken frames 63 to 87 as input.
+
+## 🔧 Installation
+
+### Prerequisites
+* Python 3.7 or higher
+* TensorFlow or PyTorch (depending on the model you're using)
+* OpenCV for video processing
+* FFmpeg (for video conversion and frame extraction)
+
+### Steps
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ghchen99/multi-view-foul-recognition.git
+cd multi-view-foul-recognition
+```
+2. Install the required dependencies:
+```bash
+pip install -r requirements.txt
+```
+3. Download the pre-trained models from the release page or train your own model by following the instructions in the training folder.
+4. To run the demo, use the following command:
+```bash
+python main.py --input_video your_video.mp4
+```
+
+## ⚙️ How It Works
+
+This project uses advanced machine learning techniques to detect fouls in football matches through multi-angle video footage. Here's a breakdown of how the system operates:
+
+* Input Video: The system takes in a football match video captured from multiple camera angles.
+* Video Processing: Using OpenCV, the video is processed to extract frames from different angles.
+* AI Analysis: The extracted frames are analyzed using a pre-trained deep learning model, which has been trained to detect common football fouls (like tackles, handballs, or off-the-ball incidents).
+* Decision Support: The system identifies potential fouls and marks them, providing timestamps and a confidence score for each detection.
+* Referee Assistance: The system can provide suggestions to the referee, who can review the identified foul instances for a more informed decision.
+
+## 📂 Folder Structure
+
+```bash
+/multi-view-foul-recognition-2025
+│
+├── /src               # Source code for video processing and model inference
+├── /training          # Scripts and resources for training the AI model
+├── /data              # Folder for storing dataset and pre-processed videos
+├── requirements.txt   # Python dependencies
+├── README.md          # Project documentation
+└── main.py            # Main entry point for running the system
+```
+
+## 🤝 Contributing
+
+We welcome contributions from the community! If you have ideas to improve the system or fix bugs, feel free to fork the repository and submit a pull request.
+
+### Steps to Contribute:
+
+1. Fork the repository.
+2. Create a new branch `git checkout -b feature-branch`.
+3. Make your changes.
+4. Commit your changes `git commit -am 'Add new feature'`.
+5. Push to your branch `git push origin feature-branch`.
+6. Create a new pull request.
+
+
+
+
+--- data/helper/mvfouls-download.py ---
+import os
+import ssl
+from dotenv import load_dotenv
+from SoccerNet.Downloader import SoccerNetDownloader as SNdl
+
+ssl._create_default_https_context = ssl.create_default_context
+
+load_dotenv()
+
+def download_mvfouls_data(password):
+    
+    mySNdl = SNdl(LocalDirectory="data/")
+    mySNdl.downloadDataTask(task="mvfouls", split=["train", "valid", "test", "challenge"], version = "720p", password=password)
+
+if __name__ == "__main__":
+    
+    password = os.getenv("SOCCERNET_PASSWORD")
+    if not password:
+        raise ValueError("Password not found. Please set SOCCERNET_PASSWORD in your .env file.")
+    
+    download_mvfouls_data(password)
+
+
+--- data/helper/mvfouls-explore.py ---
+import json
+
+# Function to load annotation data from a JSON file
+def load_annotations(file_path):
+    """
+    Loads annotations from a JSON file.
+    """
+    with open(file_path, 'r') as f:
+        return json.load(f)
+
+# Function to process actions and calculate attribute counts
+def process_actions(actions):
+    """
+    Processes actions to count distinct values and their occurrences for each attribute.
+    """
+    attribute_counts = {}
+
+    for action_id, attributes in actions.items():
+        for key, value in attributes.items():
+            if key != "Clips":  # Exclude 'Clips'
+                if key not in attribute_counts:
+                    attribute_counts[key] = {}
+                if value not in attribute_counts[key]:
+                    attribute_counts[key][value] = 0
+                attribute_counts[key][value] += 1
+    
+    return attribute_counts
+
+# Function to display attribute counts
+def display_counts(attribute_counts):
+    """
+    Displays distinct values and their occurrences for each attribute in a formatted manner.
+    """
+    print("Attribute Counts:\n=================")
+    for key, values in attribute_counts.items():
+        print(f"{key}:")
+        for value, count in values.items():
+            print(f"  {value if value else 'Empty'}: {count} occurrences")
+        print("-----------------")
+    
+# Main function to load, process, and save data
+def main():
+    annotations = load_annotations('data/dataset/train/annotations.json')
+    
+    # Extract actions
+    actions = annotations["Actions"]
+
+    attribute_counts = process_actions(actions)
+    display_counts(attribute_counts)
+   
+
+if __name__ == "__main__":
+    main()
+    
+    
+'''
+-----------------
+Offence:
+  Offence: 2495 occurrences
+  No offence: 324 occurrences
+  Between: 96 occurrences
+  Empty: 1 occurrences
+-----------------
+Contact:
+  With contact: 2835 occurrences
+  Without contact: 81 occurrences
+-----------------
+Bodypart:
+  Upper body: 1048 occurrences
+  Under body: 1831 occurrences
+  Empty: 37 occurrences
+-----------------
+Upper body part:
+  Use of shoulder: 332 occurrences
+  Empty: 1899 occurrences
+  Use of arms: 670 occurrences
+  Use of shoulders: 15 occurrences
+-----------------
+Action class:
+  Challenge: 383 occurrences
+  Tackling: 448 occurrences
+  Standing tackling: 1264 occurrences
+  High leg: 103 occurrences
+  Dive: 28 occurrences
+  Elbowing: 178 occurrences
+  Empty: 11 occurrences
+  Holding: 361 occurrences
+  Dont know: 52 occurrences
+  Pushing: 88 occurrences
+-----------------
+Severity:
+  1.0: 1402 occurrences
+  3.0: 687 occurrences
+  5.0: 27 occurrences
+  Empty: 353 occurrences
+  2.0: 403 occurrences
+  4.0: 44 occurrences
+  
+  {1.0 :"No card", 2.0 :"Borderline No/Yellow", 3.0 :"Yellow card", 4.0 :"Borderline Yellow/Red", 5.0 :"Red card"}
+-----------------
+Multiple fouls:
+  Empty: 377 occurrences
+  Yes: 304 occurrences
+  No: 2234 occurrences
+  yes: 1 occurrences
+-----------------
+Try to play:
+  Empty: 1133 occurrences
+  Yes: 1650 occurrences
+  No: 133 occurrences
+-----------------
+Touch ball:
+  Empty: 1135 occurrences
+  No: 1543 occurrences
+  Yes: 192 occurrences
+  Maybe: 46 occurrences
+-----------------
+Handball:
+  No handball: 2892 occurrences
+  Handball: 24 occurrences
+-----------------
+Handball offence:
+  Empty: 2892 occurrences
+  No offence: 6 occurrences
+  Offence: 18 occurrences
+  -----------------'''
+
+--- feature_engineering/ActionData.py ---
+import logging
+from typing import Dict
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# ActionData class to store and process action parameters
+class ActionData:
+    """
+    Represents a specific action in the dataset, including associated clips and features.
+    """
+
+    def __init__(self, action_data: Dict):
+        """
+        Initialises an ActionData object with the provided action data.
+        Sets self.valid to False if the action should be skipped, except for "No offence" cases
+        where empty values are populated with "missing".
+
+        Parameters:
+        action_data (dict): A dictionary containing detailed information about the action. 
+        """
+        # Initialize validity flag
+        self.valid = True
+        
+        # Special handling for "No offence" cases
+        is_no_offence = action_data['Offence'] == "No offence"
+        
+        # Check and store offence - skip if empty string and not "No offence"
+        if action_data['Offence'] == "" and not is_no_offence:
+            logging.warning("Skipping action: Empty offence value")
+            self.valid = False
+            return
+            
+        # Check and store bodypart - skip if empty string and not "No offence"
+        if action_data['Bodypart'] == "":
+            logging.warning("Skipping action: Empty bodypart value")
+            self.valid = False
+            return
+            
+        # Check and store actionclass - skip if empty string or Dont know and not "No offence"
+        if action_data['Action class'] in ["", "Dont know"]:
+            logging.warning("Skipping action: Invalid action class value")
+            self.valid = False
+            return
+
+        # Store offence value
+        self.offence = action_data['Offence']
+        
+        # Handle bodypart and upperbodypart logic
+        if action_data['Bodypart'] == "":
+            self.bodypart = "" if is_no_offence else action_data['Bodypart']
+        elif action_data['Bodypart'] == 'Upper body':
+            upperbodypart = action_data['Upper body part']
+            # Only update if upperbodypart is not empty string
+            if upperbodypart != "":
+                # Convert 'Use of shoulders' to 'Use of shoulder'
+                if upperbodypart == 'Use of shoulders':
+                    self.bodypart = 'Use of shoulder'
+                else:
+                    self.bodypart = upperbodypart
+            else:
+                self.bodypart = 'Upper body'  # Keep original value if upperbodypart is empty string
+        else:
+            self.bodypart = action_data['Bodypart']
+        
+        # Store actionclass - use "missing" for empty values in "No offence" cases
+        self.actionclass = "" if (action_data['Action class'] == "" and is_no_offence) else action_data['Action class']
+        
+        # Store severity - use "missing" for empty values in "No offence" cases
+        self.severity = "1.0" if (action_data['Severity'] == "") else action_data['Severity']
+        
+        # Store trytoplay - convert empty string to No or "missing" for "No offence" cases
+        self.trytoplay = "No" if (action_data['Try to play'] == "" and is_no_offence) else ('No' if action_data['Try to play'] == "" else action_data['Try to play'])
+        
+        # Store touchball - convert empty string to No or "missing" for "No offence" cases
+        self.touchball = "No" if (action_data['Touch ball'] == "" and is_no_offence) else ('No' if action_data['Touch ball'] == "" else action_data['Touch ball'])
+        
+        # Store clips
+        self.clips = action_data['Clips']
+
+
+
+
+--- feature_engineering/FeatureExtractor.py ---
+import os
+import json
+import cv2
+import torch
+import logging
+import numpy as np
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from torchvision import transforms
+from torchvision.models.video import (
+    r3d_18, R3D_18_Weights, mc3_18, MC3_18_Weights,
+    r2plus1d_18, R2Plus1D_18_Weights, s3d, S3D_Weights,
+    mvit_v2_s, MViT_V2_S_Weights, mvit_v1_b, MViT_V1_B_Weights
+)
+from typing import List, Dict, Union, Optional
+from feature_engineering.ActionData import ActionData
+from feature_engineering.HDF5Reader import save_to_hdf5
+
+class FeatureExtractor:
+    def __init__(self, model_type: str = 'r3d_18', device: str = 'cpu') -> None:
+        self.device = device
+        self.model = self._initialize_model(model_type).to(device).eval()
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.43216, 0.394666, 0.37645], 
+                                 std=[0.22803, 0.22145, 0.216989])
+        ])
+    
+    def _initialize_model(self, model_type: str):
+        """
+        Initializes the model based on the specified model type.
+        """
+        model_mapping = {
+            'r3d_18': (r3d_18, R3D_18_Weights.DEFAULT),
+            'mc3_18': (mc3_18, MC3_18_Weights.DEFAULT),
+            'r2plus1d_18': (r2plus1d_18, R2Plus1D_18_Weights.DEFAULT),
+            's3d': (s3d, S3D_Weights.DEFAULT),
+            'mvit_v2_s': (mvit_v2_s, MViT_V2_S_Weights.DEFAULT),
+            'mvit_v1_b': (mvit_v1_b, MViT_V1_B_Weights.DEFAULT)
+        }
+
+        if model_type not in model_mapping:
+            raise ValueError(f"Unsupported model type: {model_type}")
+        
+        model_class, model_weights = model_mapping[model_type]
+        model = model_class(weights=model_weights)
+        
+        # Remove the final classification layer
+        if hasattr(model, 'fc'):
+            model.fc = torch.nn.Identity()
+        elif hasattr(model, 'classifier'):
+            model.classifier = torch.nn.Identity()
+        elif hasattr(model, 'head'):
+            model.head = torch.nn.Identity()
+
+        return model
+
+    def preprocess_frame(self, frame: np.ndarray) -> torch.Tensor:
+        """
+        Preprocesses a single frame.
+        """
+        return self.transform(Image.fromarray(frame))
+
+    def preprocess_frames(self, frames: List[np.ndarray]) -> torch.Tensor:
+        """
+        Preprocesses the frames concurrently.
+        """
+        with ThreadPoolExecutor() as executor:
+            processed_frames = list(executor.map(self.preprocess_frame, frames))
+
+        frames_tensor = torch.stack(processed_frames)
+        return frames_tensor.permute(1, 0, 2, 3)
+
+    def extract_features(self, video_path: str) -> torch.Tensor:
+        """
+        Extracts features from the video file.
+        """
+        logging.info(f"Starting feature extraction for video: {video_path}")
+
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            logging.error(f"Failed to open video file: {video_path}")
+            raise ValueError(f"Failed to open video file: {video_path}")
+
+        frames = []
+
+        # Capture frames 63 to 87 sequentially (avoid concurrent access to VideoCapture)
+        for frame_idx in range(63, 88):
+            logging.debug(f"Processing frame {frame_idx}...")
+            
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            ret, frame = cap.read()
+            
+            if not ret:
+                logging.warning(f"Failed to read frame {frame_idx}")
+                break
+            
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frames.append(frame)
+
+        cap.release()
+        logging.info("Released video capture.")
+
+        if len(frames) != 25:
+            logging.error(f"Expected 25 frames, but got {len(frames)}")
+            raise ValueError(f"Expected 25 frames, but got {len(frames)}")
+
+        logging.debug(f"Preprocessing {len(frames)} frames...")
+        frames_tensor = self.preprocess_frames(frames).unsqueeze(0).to(self.device)
+
+        # logging.info(f"Shape of frames_tensor: {frames_tensor.shape}")
+
+        with torch.no_grad():
+            logging.debug("Extracting features using the model...")
+            features = self.model(frames_tensor)
+
+        logging.info("Feature extraction completed successfully.")
+
+        return features
+
+
+def extract_clip_features(action: ActionData) -> None:
+    """
+    Extracts motion features from the clips associated with the action with enhanced logging and concurrency.
+    """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    logging.info(f"Starting feature extraction for action with {len(action.clips)} clips")
+
+    # Use ThreadPoolExecutor for concurrent extraction
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = []
+        
+        for clip in action.clips:
+            video_path = os.path.join('data', clip['Url'].lower() + '.mp4')
+            futures.append(executor.submit(extract_video_features, video_path, clip, device))
+        
+        # Wait for all tasks to complete and handle results
+        for future in as_completed(futures):
+            try:
+                future.result()  # Raises exception if occurred during video feature extraction
+            except Exception as e:
+                logging.error(f"Error during feature extraction: {str(e)}")
+
+def extract_video_features(video_path: str, clip: Dict, device: torch.device) -> None:
+    """
+    Helper function to extract features for a single video and assign them to a clip.
+    """
+    extractor = FeatureExtractor(model_type='r3d_18', device=device)
+
+    if os.path.exists(video_path):
+        logging.info(f"Extracting features for video: {video_path}")
+        try:
+            clip['video_features'] = extractor.extract_features(video_path)
+            logging.info(f"Features extracted for video: {video_path}")
+        except Exception as e:
+            logging.error(f"Error extracting features for {video_path}: {str(e)}")
+            clip['video_features'] = None
+    else:
+        logging.error(f"Video file not found: {video_path}")
+        clip['video_features'] = None
+
+def process_annotations(annotations: Dict[str, Union[int, Dict]], max_actions: Optional[int] = None) -> List[ActionData]:
+    """
+    Processes dataset annotations and extracts video features.
+    If `max_actions` is specified, processes only the first `max_actions` actions.
+    """
+    result = []
+    action_count = 0
+
+    for action_id, action_data in annotations['Actions'].items():
+        if max_actions and action_count >= max_actions:
+            break
+        
+        logging.info(f"Processing Action ID: {action_id}")
+        action = ActionData(action_data)
+        if action.valid: 
+            extract_clip_features(action)
+            result.append(action)
+        else:
+            logging.info(f"Skipped Action ID: {action_id}")
+        
+        action_count += 1
+
+    return result
+
+def load_annotations(file_path: str) -> dict:
+    """
+    Loads the annotations from a JSON file.
+    """
+    with open(file_path, 'r') as f:
+        annotations = json.load(f)
+    return annotations
+
+def process_data_set(annotations: dict, max_actions: int) -> list:
+    """
+    Processes the annotations and extracts the actions based on the max_actions parameter.
+    """
+    logging.info(f"Dataset Set: {annotations['Set']}")
+    logging.info(f"Total Actions: {annotations['Number of actions']}")
+    actions = process_annotations(annotations, max_actions=max_actions)
+    return actions
+
+def save_extracted_features(actions: list, output_file: str) -> None:
+    """
+    Saves the extracted actions into an HDF5 file.
+    """
+    save_to_hdf5(actions, output_file)
+    logging.info(f"Done: Extracted features for {len(actions)} actions.")
+
+def process_and_save_data_set(annotations_file: str, max_actions: int, output_file: str) -> None:
+    """
+    High-level function to load, process, and save dataset features for train, validation, or test.
+    """
+    annotations = load_annotations(annotations_file)
+    actions = process_data_set(annotations, max_actions)
+    save_extracted_features(actions, output_file)
+    
+def process_inference_video(video_path: str, replay_speed: float, output_file: str) -> None:
+    """
+    Processes a single video for inference and saves the features to an HDF5 file.
+    """
+    logging.info(f"Processing inference video: {video_path}")
+    
+    extractor = FeatureExtractor(model_type='r3d_18', device='cpu')
+    features = extractor.extract_features(video_path)
+    
+    save_extracted_features([ActionData({'video_features': features, 'replay_speed': replay_speed})], output_file)
+    
+    logging.info(f"Saved inference features to: {output_file}")
+
+def main() -> None:
+    
+    # TODO: Run on all datasets
+
+    # Train dataset
+    train_annotations_file = 'data/dataset/train/annotations.json'
+    train_output_file = 'data/dataset/train/train_features.h5'
+    process_and_save_data_set(train_annotations_file, max_actions=None, output_file=train_output_file)
+    
+    # Validation dataset
+    validation_annotations_file = 'data/dataset/valid/annotations.json'
+    validation_output_file = 'data/dataset/valid/validation_features.h5'
+    process_and_save_data_set(validation_annotations_file, max_actions=None, output_file=validation_output_file)
+    
+
+    # Test dataset
+    test_annotations_file = 'data/dataset/test/annotations.json'
+    test_output_file = 'data/dataset/test/test_features.h5'
+    process_and_save_data_set(test_annotations_file, max_actions=None, output_file=test_output_file)
+
+
+if __name__ == "__main__":
+    main()
+
+
+--- feature_engineering/HDF5Reader.py ---
+import os
+import h5py
+import torch
+import logging
+import numpy as np
+from collections import Counter
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def save_to_hdf5(actions, output_file):
+    """
+    Saves action data and video features to an HDF5 file.
+    """
+    with h5py.File(output_file, 'w') as f:
+        for idx, action in enumerate(actions):
+            action_group = f.create_group(f"action_{idx}")
+
+            # Save attributes (non-clip data)
+            for attr in vars(action):
+                if attr != "clips":
+                    action_group.create_dataset(attr, data=getattr(action, attr))
+
+            # Save clips
+            clips_group = action_group.create_group("clips")
+            for clip_idx, clip in enumerate(action.clips):
+                clip_group = clips_group.create_group(f"clip_{clip_idx}")
+
+                # Save non-video features
+                for key, value in clip.items():
+                    if key != 'video_features':
+                        clip_group.create_dataset(key, data=value)
+
+                # Save video features
+                if clip['video_features'] is not None:
+                    video_features_group = clip_group.create_group('video_features')
+                    video_features_np = clip['video_features'].cpu().numpy()
+                    video_features_group.create_dataset('data', data=video_features_np)
+
+    logging.info(f"Saved action data to {output_file}")
+
+def print_field_occurrences(actions):
+    """
+    Logs distinct occurrences and counts for each field in the actions data.
+    """
+    if not actions:
+        logging.warning("No actions provided for analysis.")
+        return
+
+    fields = [field for field in actions[0].keys() if field != 'clips']
+    logging.info("Field value distributions:")
+
+    for field in sorted(fields):
+        value_counts = Counter(str(action[field]) for action in actions)
+        logging.info(f"\n{field} - Total entries: {len(actions)}")
+        logging.info("-" * 50)
+
+        for value, count in sorted(value_counts.items(), key=lambda x: -x[1]):
+            percentage = (count / len(actions)) * 100
+            logging.info(f"'{value}': {count} occurrences ({percentage:.1f}%)")
+
+def read_from_hdf5(input_file):
+    """
+    Reads action data and video features from an HDF5 file.
+    """
+    with h5py.File(input_file, 'r') as f:
+        actions = []
+        for action_key in f.keys():
+            action_group = f[action_key]
+            action_data = {attr: action_group[attr][()] for attr in action_group if attr != 'clips'}
+
+            # Read clips
+            clips = []
+            if 'clips' in action_group:
+                clips_group = action_group['clips']
+                for clip_key in clips_group.keys():
+                    clip_group = clips_group[clip_key]
+                    clip_data = {key: clip_group[key][()] for key in clip_group if key != 'video_features'}
+
+                    # Read video features
+                    video_features = None
+                    if 'video_features' in clip_group:
+                        features_group = clip_group['video_features']
+                        if 'data' in features_group:
+                            video_features_np = features_group['data'][()]
+                            video_features = torch.tensor(video_features_np)
+
+                    clip_data['video_features'] = video_features
+                    clips.append(clip_data)
+
+            action_data['clips'] = clips
+            actions.append(action_data)
+
+        logging.info(f"Loaded {len(actions)} actions from {input_file}")
+        return actions
+
+def main():
+    """
+    Main function to load and inspect HDF5 data.
+    """
+    input_file = 'data/dataset/test/test_features.h5'
+
+    if os.path.exists(input_file):
+        actions = read_from_hdf5(input_file)
+        
+        for index, action in enumerate(actions):
+            logging.info(f"Action ID: {index}")
+            logging.info(f"Body part: {action['bodypart']}")
+            for clip in action['clips']:
+                camera_angle = clip['Camera type']
+                video_features = clip['video_features']
+                
+        print_field_occurrences(actions)
+    else:
+        logging.error(f"File not found: {input_file}")
+
+if __name__ == "__main__":
+    main()
+
+
+--- inference.py ---
+import logging
+import torch
+from train import load_model
+from training.Decoder import Decoder
+from training.FoulDataPreprocessor import FoulDataPreprocessor
+from feature_engineering.FeatureExtractor import FeatureExtractor
+from feature_engineering.ActionData import ActionData
+from feature_engineering.HDF5Reader import save_to_hdf5
+
+def save_extracted_features(actions: list, output_file: str) -> None:
+    """
+    Saves the extracted actions into an HDF5 file.
+    """
+    save_to_hdf5(actions, output_file)
+    logging.info(f"Done: Extracted features for {len(actions)} actions.")
+    
+def process_inference_video(video_path: str, replay_speed: float, output_file: str) -> None:
+    """
+    Processes a single video for inference and saves the features to an HDF5 file.
+    """
+    logging.info(f"Processing inference video: {video_path}")
+    
+    extractor = FeatureExtractor(model_type='r3d_18', device='cpu')
+    features = extractor.extract_features(video_path)
+    
+    save_extracted_features([ActionData({'Offence': 'Offence', 
+                                         'Bodypart': 'Under body',
+                                         'Action class': 'Tackling',
+                                         'Touch ball': 'No',
+                                         'Try to play': 'Yes',
+                                         'Severity': '1.0',
+                                         'Clips': [
+                                                {
+                                                    'video_features': features,
+                                                    'Replay speed': replay_speed,
+                                                    'Camera type': 'Close-up player or field referee'
+                                                }
+                                         ]})], output_file)
+    
+    logging.info(f"Saved inference features to: {output_file}")
+
+def main() -> None:
+
+    inference_file = 'data/dataset/inference/inference_features.h5'
+    video_path = 'data/dataset/inference/offence_underbody_tackling_3.0_trytoplay_notouchball.mp4'
+    replay_speed = 1.4
+    process_inference_video(video_path, replay_speed, inference_file)
+    
+    model= load_model("foul_detection_model.pth")
+    
+    input_file = 'data/dataset/inference/inference_features.h5'
+    preprocessor = FoulDataPreprocessor()
+    X_test, _ = preprocessor.process_data(input_file)
+
+    model.eval()
+
+    with torch.no_grad():  # No need to compute gradients during inference
+        actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred = model(X_test)
+
+    # Example usage
+    decoder = Decoder()
+
+    # Decode predictions along with probabilities inside the decoder
+    decoder.decode_predictions(
+        actionclass_pred,
+        bodypart_pred,
+        offence_pred,
+        touchball_pred,
+        trytoplay_pred,
+        severity_pred
+    )
+
+if __name__ == "__main__":
+    main()
+
+
+--- pipeline.py ---
+# pipeline.py
+
+import os
+import logging
+from pathlib import Path
+import torch
+from typing import Optional, Tuple, Dict, List, Union
+
+from feature_engineering.FeatureExtractor import FeatureExtractor
+from feature_engineering.ActionData import ActionData
+from feature_engineering.HDF5Reader import save_to_hdf5, read_from_hdf5
+from training.FoulDataPreprocessor import FoulDataPreprocessor
+from training.Decoder import Decoder
+from train import MultiTaskModel, train_model, save_model, load_model
+
+class FoulDetectionPipeline:
+    """Main pipeline for training and inference in the foul detection system."""
+    
+    def __init__(self, base_dir: str = 'data/dataset/'):
+        self.base_dir = Path(base_dir)
+        self.preprocessor = FoulDataPreprocessor()
+        self.decoder = Decoder()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Configure logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+        
+    def extract_features(self, split: str, max_actions: Optional[int] = None) -> str:
+        """Extract features for a specific dataset split."""
+        input_file = self.base_dir / split / 'annotations.json'
+        output_file = self.base_dir / split / f'{split}_features.h5'
+        
+        if not input_file.exists():
+            raise FileNotFoundError(f"Annotations file not found: {input_file}")
+            
+        # Load annotations
+        with open(input_file, 'r') as f:
+            import json
+            annotations = json.load(f)
+            
+        logging.info(f"Dataset Set: {annotations['Set']}")
+        logging.info(f"Total Actions: {annotations['Number of actions']}")
+        
+        # Process annotations
+        actions = []
+        action_count = 0
+        
+        for action_id, action_data in annotations['Actions'].items():
+            if max_actions and action_count >= max_actions:
+                break
+                
+            logging.info(f"Processing Action ID: {action_id}")
+            action = ActionData(action_data)
+            
+            if action.valid:
+                # Extract features for each clip
+                for clip in action.clips:
+                    video_path = os.path.join('data', clip['Url'].lower() + '.mp4')
+                    if os.path.exists(video_path):
+                        try:
+                            extractor = FeatureExtractor(model_type='r3d_18', device=self.device)
+                            clip['video_features'] = extractor.extract_features(video_path)
+                        except Exception as e:
+                            logging.error(f"Error extracting features for {video_path}: {str(e)}")
+                            clip['video_features'] = None
+                    else:
+                        logging.error(f"Video file not found: {video_path}")
+                        clip['video_features'] = None
+                
+                actions.append(action)
+            else:
+                logging.info(f"Skipped Action ID: {action_id}")
+            
+            action_count += 1
+        
+        # Save extracted features
+        save_to_hdf5(actions, str(output_file))
+        logging.info(f"Saved features to {output_file}")
+        
+        return str(output_file)
+
+    def process_video_for_inference(self, video_path: str, replay_speed: float = 1.0) -> str:
+        """Process a single video for inference."""
+        output_dir = self.base_dir / 'inference'
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / 'inference_features.h5'
+        
+        # Create a dummy action with default values for preprocessing
+        dummy_action = ActionData({
+            'Offence': 'Offence',
+            'Bodypart': 'Under body',  
+            'Action class': 'Tackling',
+            'Touch ball': 'No',
+            'Try to play': 'Yes',
+            'Severity': '1.0',
+            'Clips': []
+        })
+        
+        # Extract features
+        extractor = FeatureExtractor(model_type='r3d_18', device=self.device)
+        features = extractor.extract_features(video_path)
+        
+        # Add clip with features
+        dummy_action.clips = [{
+            'video_features': features,
+            'Replay speed': replay_speed,
+            'Camera type': 'Close-up player or field referee'
+        }]
+        
+        # Save features
+        save_to_hdf5([dummy_action], str(output_file))
+        return str(output_file)
+
+    def train(self, train_file: str, valid_file: str, epochs: int = 100, 
+             batch_size: int = 64, learning_rate: float = 0.0005) -> MultiTaskModel:
+        """Train the model using the specified training and validation data."""
+        logging.info("Starting model training...")
+        
+        # Process training data
+        X_train, y_train = self.preprocessor.process_data(train_file)
+        # X_valid, y_valid = self.preprocessor.process_data(valid_file)
+        
+        # if X_train is None or X_valid is None:
+        if X_train is None:
+            raise ValueError("Failed to process training or validation data")
+            
+        # Calculate class weights
+        class_weights = self._calculate_class_weights(y_train)
+        
+        # Train model
+        model = train_model(
+            X_train=X_train,
+            y_train=y_train,
+            # X_valid=X_valid, not implemented yet
+            # y_valid=y_valid,
+            class_weights=class_weights,
+            severity_classes=len(self.preprocessor.severity_map),
+            epochs=epochs,
+            batch_size=batch_size,
+            learning_rate=learning_rate
+        )
+        
+        # Save model with metadata
+        metadata = {
+            'input_size': X_train.shape[1],
+            'action_classes': len(class_weights['actionclass']),
+            'bodypart_classes': len(class_weights['bodypart']),
+            'offence_classes': len(class_weights['offence']),
+            'touchball_classes': len(class_weights['touchball']),
+            'trytoplay_classes': len(class_weights['trytoplay']),
+            'severity_classes': len(class_weights['severity'])
+        }
+        
+        save_model(model, "foul_detection_model.pth", metadata)
+        return model
+
+    def _calculate_class_weights(self, y_train: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        """Calculate class weights for all tasks."""
+        return {
+            'actionclass': self.preprocessor.get_class_weights(
+                y_train['actionclass'], len(self.preprocessor.action_class_map)),
+            'bodypart': self.preprocessor.get_class_weights(
+                y_train['bodypart'], len(self.preprocessor.bodypart_map)),
+            'offence': self.preprocessor.get_class_weights(
+                y_train['offence'], len(self.preprocessor.offence_map)),
+            'touchball': self.preprocessor.get_class_weights(
+                y_train['touchball'], len(self.preprocessor.touchball_map)),
+            'trytoplay': self.preprocessor.get_class_weights(
+                y_train['trytoplay'], len(self.preprocessor.trytoplay_map)),
+            'severity': self.preprocessor.get_class_weights(
+                y_train['severity'], len(self.preprocessor.severity_map))
+        }
+
+    def inference(self, model: MultiTaskModel, inference_file: str) -> Dict:
+        """Run inference on processed video data."""
+        logging.info("Starting inference...")
+        
+        X_test, _ = self.preprocessor.process_data(inference_file)
+        if X_test is None:
+            raise ValueError("Failed to process inference data")
+            
+        model.eval()
+        with torch.no_grad():
+            predictions = model(X_test)
+            
+        # Decode and format predictions
+        return self.decoder.decode_predictions(*predictions)
+
+def main():
+    """Run the complete pipeline: feature extraction, training, and inference."""
+    pipeline = FoulDetectionPipeline()
+    
+    try:
+        # 1. Extract features for all splits
+        logging.info("Extracting features...")
+        # train_features = pipeline.extract_features('train')
+        # valid_features = pipeline.extract_features('valid')
+        # test_features = pipeline.extract_features('test')
+        train_features = 'data/dataset/train/train_features.h5'
+        valid_features = 'data/dataset/valid/valid_features.h5'
+        test_features = 'data/dataset/test/test_features.h5'
+        
+        # 2. Train model
+        logging.info("Training model...")
+        model = pipeline.train(
+            train_file=train_features,
+            valid_file=valid_features,
+            epochs=100,
+            batch_size=64,
+            learning_rate=0.0005
+        )
+        
+        # 3. Run inference on test set
+        logging.info("Running inference on test set...")
+        pipeline.inference(model, test_features)
+        
+        # 4. Optional: Run inference on a single video
+        video_path = 'data/dataset/inference/offence_underbody_tackling_3.0_trytoplay_notouchball.mp4'
+        if os.path.exists(video_path):
+            logging.info("Running inference on single video...")
+            inference_features = pipeline.process_video_for_inference(
+                video_path,
+                replay_speed=1.0
+            )
+            pipeline.inference(model, inference_features)
+            
+        logging.info("Pipeline completed successfully!")
+        
+    except Exception as e:
+        logging.error(f"Pipeline failed: {str(e)}")
+        raise
+
+if __name__ == "__main__":
+    main()
+
+--- requirements.txt ---
+SoccerNet
+python-dotenv
+opencv-python-headless
+seaborn
+h5py
+torch
+torchvision
+numpy<2.0
+
+--- snapshot.py ---
+import os
+import fnmatch
+from pathlib import Path
+from typing import List, Set, Tuple
+
+DEFAULT_IGNORE_PATTERNS = {
+    '.git/',
+    '.git/**',
+    '.DS_Store',
+    '__pycache__/',
+    '**/__pycache__/',
+    '*.pyc',
+    '.env',
+    'node_modules/',
+    '.idea/',
+    '.vscode/',
+    '.pytest_cache/',
+    '*.swp',
+    '.gitignore'
+}
+
+def parse_gitignore() -> Set[str]:
+    """Parse .gitignore file and return a set of patterns."""
+    ignore_patterns = DEFAULT_IGNORE_PATTERNS.copy()
+    try:
+        with open('.gitignore', 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    # Handle directory patterns
+                    if line.endswith('/'):
+                        ignore_patterns.add(line)
+                        ignore_patterns.add(f"{line}**")
+                    # Handle wildcards
+                    if '*' in line:
+                        ignore_patterns.add(line)
+                    else:
+                        ignore_patterns.add(line)
+                        ignore_patterns.add(f"**/{line}")
+    except FileNotFoundError:
+        pass
+    return ignore_patterns
+
+def should_ignore(path: str, ignore_patterns: Set[str]) -> bool:
+    """
+    Check if a path should be ignored based on patterns.
+    Handles both file and directory patterns.
+    """
+    # Convert path to use forward slashes for consistency
+    path = path.replace(os.sep, '/')
+    
+    # Always ignore hidden files and directories (starting with .)
+    if os.path.basename(path).startswith('.'):
+        return True
+
+    for pattern in ignore_patterns:
+        # Handle directory-specific patterns
+        if pattern.endswith('/') and os.path.isdir(path):
+            if fnmatch.fnmatch(f"{path}/", pattern):
+                return True
+        # Handle patterns with wildcards
+        if '**' in pattern:
+            # Replace ** with a reasonable pattern that matches any number of directories
+            pattern_regex = pattern.replace('**', '*')
+            if fnmatch.fnmatch(path, pattern_regex):
+                return True
+        # Direct pattern matching
+        if fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(os.path.basename(path), pattern):
+            return True
+        # Check if the path or any of its parent directories match the pattern
+        path_parts = path.split('/')
+        for i in range(len(path_parts)):
+            subpath = '/'.join(path_parts[:i+1])
+            if fnmatch.fnmatch(subpath, pattern):
+                return True
+    return False
+
+def is_binary(file_path: str) -> bool:
+    """Check if a file is binary by reading its first few thousand bytes."""
+    try:
+        with open(file_path, 'rb') as f:
+            chunk = f.read(4096)
+            if not chunk:  # empty file
+                return False
+            
+            textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+            return bool(chunk.translate(None, textchars))
+    except (IOError, OSError):
+        return True
+
+def read_file_content(file_path: str) -> str:
+    """Attempt to read file content with various encodings."""
+    if is_binary(file_path):
+        return "[Binary file]"
+
+    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    
+    for encoding in encodings:
+        try:
+            with open(file_path, 'r', encoding=encoding) as f:
+                return f.read()
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+        except (IOError, OSError):
+            return "[Error: Unable to read file]"
+    
+    return "[Error: Unable to decode file with available encodings]"
+
+def generate_tree(path: str = ".", level: int = 0, ignore_patterns: Set[str] = None) -> Tuple[List[str], List[Tuple[str, str]]]:
+    """
+    Generate a tree structure of the directory and collect file contents.
+    Returns a tuple of (tree_lines, file_contents).
+    """
+    if ignore_patterns is None:
+        ignore_patterns = parse_gitignore()
+
+    tree_lines = []
+    file_contents = []
+    
+    try:
+        items = sorted(os.listdir(path))
+    except PermissionError:
+        return [], []
+
+    # Count items that aren't ignored for proper tree formatting
+    valid_items = [item for item in items if not should_ignore(os.path.join(path, item), ignore_patterns)]
+    last_idx = len(valid_items) - 1
+
+    for idx, item in enumerate(items):
+        full_path = os.path.join(path, item)
+        rel_path = os.path.relpath(full_path)
+
+        if should_ignore(rel_path, ignore_patterns):
+            continue
+
+        # Determine if this is the last item for proper tree formatting
+        is_last = idx >= last_idx
+        # Create tree line with proper formatting
+        if level == 0:
+            prefix = ""
+        else:
+            prefix = "└── " if is_last else "├── "
+            prefix = "    " * (level - 1) + prefix
+
+        tree_lines.append(f"{prefix}{item}")
+
+        if os.path.isdir(full_path):
+            # Recursively process directory
+            subtree_lines, subtree_contents = generate_tree(full_path, level + 1, ignore_patterns)
+            tree_lines.extend(subtree_lines)
+            file_contents.extend(subtree_contents)
+        else:
+            # Read and store file content
+            content = read_file_content(full_path)
+            file_contents.append((rel_path, content))
+
+    return tree_lines, file_contents
+
+def create_snapshot(output_file: str = "snapshot.txt"):
+    """Create a snapshot of the current directory and save it to a file."""
+    tree_lines, file_contents = generate_tree()
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        # Write directory tree
+        f.write("Directory Structure:\n")
+        f.write("===================\n\n")
+        for line in tree_lines:
+            f.write(line + "\n")
+        
+        # Write file contents
+        f.write("\nFile Contents:\n")
+        f.write("=============\n\n")
+        for filepath, content in file_contents:
+            f.write(f"--- {filepath} ---\n")
+            f.write(content)
+            f.write("\n\n")
+
+if __name__ == "__main__":
+    create_snapshot()
+    print("Snapshot has been created in 'snapshot.txt'")
+
+--- snapshot.txt ---
+Directory Structure:
+===================
+
 data
 └── helper
     ├── mvfouls-download.py
@@ -907,6 +2176,561 @@ def create_snapshot(output_file: str = "snapshot.txt"):
 if __name__ == "__main__":
     create_snapshot()
     print("Snapshot has been created in 'snapshot.txt'")
+
+--- train.py ---
+import torch
+import logging
+import torch.nn as nn
+import torch.optim as optim
+from matplotlib import pyplot as plt
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, TensorDataset
+from training.FoulDataPreprocessor import FoulDataPreprocessor
+from training.Decoder import Decoder
+
+class MultiTaskModel(nn.Module):
+    def __init__(self, input_size, action_classes, bodypart_classes, offence_classes, touchball_classes, trytoplay_classes, severity_classes):
+        super(MultiTaskModel, self).__init__()
+
+        # Shared input layers with Batch Normalization
+        self.fc1 = nn.Linear(input_size, 512)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.fc2 = nn.Linear(512, 256)
+        self.bn2 = nn.BatchNorm1d(256)
+        self.fc3 = nn.Linear(256, 128)
+        self.bn3 = nn.BatchNorm1d(128)
+
+        # Separate output layers for each task
+        self.fc_actionclass = nn.Linear(128, action_classes)
+        self.fc_bodypart = nn.Linear(128, bodypart_classes)
+        self.fc_offence = nn.Linear(128, offence_classes)
+        self.fc_touchball = nn.Linear(128, touchball_classes)
+        self.fc_trytoplay = nn.Linear(128, trytoplay_classes)
+        self.fc_severity = nn.Linear(128, severity_classes)
+
+        # Initialize weights
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        # Custom initialization (He initialization)
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_uniform_(m.weight, nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        # Forward pass through shared layers with ReLU and Batch Normalization
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = F.relu(self.bn2(self.fc2(x)))
+        x = F.relu(self.bn3(self.fc3(x)))
+
+        # Separate outputs for each task
+        actionclass_output = self.fc_actionclass(x)
+        bodypart_output = self.fc_bodypart(x)
+        offence_output = self.fc_offence(x)
+        touchball_output = self.fc_touchball(x)
+        trytoplay_output = self.fc_trytoplay(x)
+        severity_output = self.fc_severity(x)
+        
+        return actionclass_output, bodypart_output, offence_output, touchball_output, trytoplay_output, severity_output
+
+def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, batch_size=64, learning_rate=0.001):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Convert inputs and labels to tensors and move them to device
+    X_train = X_train.to(device)
+    y_train = {key: value.to(device) for key, value in y_train.items()}
+    
+    # Initialize the model
+    model = MultiTaskModel(
+        input_size=X_train.shape[1], 
+        action_classes=len(class_weights['actionclass']),
+        bodypart_classes=len(class_weights['bodypart']),
+        offence_classes=len(class_weights['offence']),
+        touchball_classes=len(class_weights['touchball']),
+        trytoplay_classes=len(class_weights['trytoplay']),
+        severity_classes=severity_classes  # Adding severity classes
+    ).to(device)
+
+    # Define loss functions and optimizer
+    criterion_actionclass = nn.CrossEntropyLoss(weight=class_weights['actionclass'].to(device))
+    criterion_bodypart = nn.CrossEntropyLoss(weight=class_weights['bodypart'].to(device))
+    criterion_offence = nn.CrossEntropyLoss(weight=class_weights['offence'].to(device))
+    criterion_touchball = nn.CrossEntropyLoss(weight=class_weights['touchball'].to(device))
+    criterion_trytoplay = nn.CrossEntropyLoss(weight=class_weights['trytoplay'].to(device))
+    criterion_severity = nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))  # Add loss for severity
+
+    # AdamW optimizer with weight decay for regularization
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+    
+    # Learning rate scheduler with ReduceLROnPlateau for better adaptive learning rate
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
+    
+    # Add gradient clipping to avoid exploding gradients
+    max_grad_norm = 1.0  # Set this to a suitable value
+
+    model.train()
+    
+    # Create DataLoader for batching
+    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], y_train['touchball'], y_train['trytoplay'], y_train['severity'])
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Initialize lists to store losses for plotting
+    total_losses = []
+    actionclass_losses = []
+    bodypart_losses = []
+    offence_losses = []
+    touchball_losses = []
+    trytoplay_losses = []
+    severity_losses = []  # Add list for severity losses
+
+    for epoch in range(epochs):
+        total_loss = 0
+        total_loss_actionclass = 0
+        total_loss_bodypart = 0
+        total_loss_offence = 0
+        total_loss_touchball = 0
+        total_loss_trytoplay = 0
+        total_loss_severity = 0  # Add variable for severity loss
+        
+        for inputs, actionclass_labels, bodypart_labels, offence_labels, touchball_labels, trytoplay_labels, severity_labels in data_loader:
+            inputs = inputs.to(device)
+            actionclass_labels = actionclass_labels.to(device)
+            bodypart_labels = bodypart_labels.to(device)
+            offence_labels = offence_labels.to(device)
+            touchball_labels = touchball_labels.to(device)
+            trytoplay_labels = trytoplay_labels.to(device)
+            severity_labels = severity_labels.to(device)  # Add severity labels
+            
+            optimizer.zero_grad()
+            
+            # Forward pass
+            outputs = model(inputs)
+            
+            # Calculate loss for each task
+            loss_actionclass = criterion_actionclass(outputs[0], actionclass_labels)
+            loss_bodypart = criterion_bodypart(outputs[1], bodypart_labels)
+            loss_offence = criterion_offence(outputs[2], offence_labels)
+            loss_touchball = criterion_touchball(outputs[3], touchball_labels)
+            loss_trytoplay = criterion_trytoplay(outputs[4], trytoplay_labels)
+            loss_severity = criterion_severity(outputs[5], severity_labels)  # Calculate loss for severity
+            
+            # Total loss (with optional weighting for tasks)
+            total_loss_batch = loss_actionclass + loss_bodypart + loss_offence + loss_touchball + loss_trytoplay + loss_severity
+            total_loss_batch.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
+            optimizer.step()
+            
+            total_loss += total_loss_batch.item()
+            total_loss_actionclass += loss_actionclass.item()
+            total_loss_bodypart += loss_bodypart.item()
+            total_loss_offence += loss_offence.item()
+            total_loss_touchball += loss_touchball.item()
+            total_loss_trytoplay += loss_trytoplay.item()
+            total_loss_severity += loss_severity.item()  # Add severity loss
+
+        # Step learning rate scheduler
+        scheduler.step(total_loss)
+
+        # Append loss values to lists for plotting
+        total_losses.append(total_loss)
+        actionclass_losses.append(total_loss_actionclass)
+        bodypart_losses.append(total_loss_bodypart)
+        offence_losses.append(total_loss_offence)
+        touchball_losses.append(total_loss_touchball)
+        trytoplay_losses.append(total_loss_trytoplay)
+        severity_losses.append(total_loss_severity)  # Append severity loss
+
+        logging.info(f"Epoch [{epoch + 1}/{epochs}], "
+                    f"Total Loss: {total_loss:.4f}, "
+                    f"Action Class Loss: {total_loss_actionclass:.4f}, "
+                    f"Body Part Loss: {total_loss_bodypart:.4f}, "
+                    f"Offence Loss: {total_loss_offence:.4f}, "
+                    f"Touchball Loss: {total_loss_touchball:.4f}, "
+                    f"Try To Play Loss: {total_loss_trytoplay:.4f}, "
+                    f"Severity Loss: {total_loss_severity:.4f}")  # Log severity loss
+    
+    # After training, plot the loss curves
+    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses)
+    
+    return model
+
+
+
+def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses):
+    """
+    Plot the training loss curves for each task.
+    """
+    epochs = range(1, len(total_losses) + 1)
+
+    plt.figure(figsize=(12, 8))
+    
+    # Plot total loss
+    plt.subplot(2, 4, 1)
+    plt.plot(epochs, total_losses, label='Total Loss', color='blue')
+    plt.title('Total Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot action class loss
+    plt.subplot(2, 4, 2)
+    plt.plot(epochs, actionclass_losses, label='Action Class Loss', color='red')
+    plt.title('Action Class Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot body part loss
+    plt.subplot(2, 4, 3)
+    plt.plot(epochs, bodypart_losses, label='Body Part Loss', color='green')
+    plt.title('Body Part Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot offence loss
+    plt.subplot(2, 4, 4)
+    plt.plot(epochs, offence_losses, label='Offence Loss', color='purple')
+    plt.title('Offence Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot touchball loss
+    plt.subplot(2, 4, 5)
+    plt.plot(epochs, touchball_losses, label='Touchball Loss', color='orange')
+    plt.title('Touchball Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot try-to-play loss
+    plt.subplot(2, 4, 6)
+    plt.plot(epochs, trytoplay_losses, label='Try To Play Loss', color='brown')
+    plt.title('Try To Play Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    # Plot severity loss
+    plt.subplot(2, 4, 7)
+    plt.plot(epochs, severity_losses, label='Severity Loss', color='cyan')
+    plt.title('Severity Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+
+    plt.tight_layout()
+    plt.show()
+
+
+# Save model function
+def save_model(model, file_path, metadata):
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'metadata': metadata  # Save metadata (e.g., input size, class sizes)
+    }
+    torch.save(checkpoint, file_path)
+    print(f"Model and metadata saved to {file_path}")
+
+# Load model function
+def load_model(file_path):
+    checkpoint = torch.load(file_path)
+    metadata = checkpoint['metadata']
+
+    # Rebuild model architecture using metadata
+    model = MultiTaskModel(
+        input_size=metadata['input_size'],
+        action_classes=metadata['action_classes'],
+        bodypart_classes=metadata['bodypart_classes'],
+        offence_classes=metadata['offence_classes'],
+        touchball_classes=metadata['touchball_classes'],
+        trytoplay_classes=metadata['trytoplay_classes'],
+        severity_classes=metadata['severity_classes'] 
+    )
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+    print(f"Model loaded from {file_path} with metadata: {metadata}")
+    return model
+
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+    preprocessor = FoulDataPreprocessor()
+    input_file = 'data/dataset/train/train_features.h5'
+    
+    X_train, y_train = preprocessor.process_data(input_file)
+    # TODO: Add validation data processing
+    
+    if X_train is not None:
+        # Calculate class weights for each task, including severity
+        class_weights = {
+            'actionclass': preprocessor.get_class_weights(y_train['actionclass'], len(preprocessor.action_class_map)),
+            'bodypart': preprocessor.get_class_weights(y_train['bodypart'], len(preprocessor.bodypart_map)),
+            'offence': preprocessor.get_class_weights(y_train['offence'], len(preprocessor.offence_map)),
+            'touchball': preprocessor.get_class_weights(y_train['touchball'], len(preprocessor.touchball_map)),
+            'trytoplay': preprocessor.get_class_weights(y_train['trytoplay'], len(preprocessor.trytoplay_map)),
+            'severity': preprocessor.get_class_weights(y_train['severity'], len(preprocessor.severity_map))  # Add severity class weights
+        }
+    
+    model = train_model(X_train, y_train, class_weights, severity_classes=len(preprocessor.severity_map), epochs=100, batch_size=64, learning_rate=0.0005)
+    
+    metadata = {
+        'input_size': X_train.shape[1],
+        'action_classes': len(class_weights['actionclass']),
+        'bodypart_classes': len(class_weights['bodypart']),
+        'offence_classes': len(class_weights['offence']),
+        'touchball_classes': len(class_weights['touchball']),
+        'trytoplay_classes': len(class_weights['trytoplay']),
+        'severity_classes': len(class_weights['severity'])  # Add severity to metadata
+    }
+    
+    save_model(model, "foul_detection_model.pth", metadata)
+
+if __name__ == "__main__":
+    main()
+
+
+if __name__ == "__main__":
+    main()
+
+
+--- training/Decoder.py ---
+import torch
+
+class Decoder:
+    def __init__(self):
+        # Define mappings for decoding
+        self.action_class_map = {
+            0: b'Standing tackling', 1: b'Tackling', 2: b'Holding',
+            3: b'Challenge', 4: b'Elbowing', 5: b'High leg',
+            6: b'Pushing', 7: b'Dive'
+        }
+        
+        self.bodypart_map = {
+            0: b'Under body', 1: b'Use of arms',
+            2: b'Use of shoulder', 3: b'Upper body'
+        }
+
+        self.offence_map = {
+            0: b'No offence', 1: b'Between', 2: b'Offence'
+        }
+        
+        self.touchball_map = {
+            0: b'No', 1: b'Maybe', 2: b'Yes'
+        }
+
+        self.trytoplay_map = {
+            0: b'No', 1: b'Yes'
+        }
+        
+        self.severity_map = {
+            0: b'1.0 No card', 1: b'2.0 Borderline No/Yellow', 2: b'3.0 Yellow card', 3: b'4.0 Yellow/ borderline Red', 4: b'5.0 Red card'
+        }
+
+    def get_predictions_and_probs(self, predictions):
+        """
+        Helper method to get the predicted labels and their corresponding probabilities.
+        """
+        probs = torch.softmax(predictions, dim=1)
+        labels = torch.argmax(probs, dim=1)
+        max_probs = probs.max(dim=1).values
+        return labels, max_probs
+
+    def decode_predictions(self, actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred):
+        """
+        Decodes predictions and prints them alongside their probabilities.
+        """
+        # Get predictions and probabilities
+        actionclass_pred_labels, actionclass_probs = self.get_predictions_and_probs(actionclass_pred)
+        bodypart_pred_labels, bodypart_probs = self.get_predictions_and_probs(bodypart_pred)
+        offence_pred_labels, offence_probs = self.get_predictions_and_probs(offence_pred)
+        touchball_pred_labels, touchball_probs = self.get_predictions_and_probs(touchball_pred)
+        trytoplay_pred_labels, trytoplay_probs = self.get_predictions_and_probs(trytoplay_pred)
+        severity_pred_labels, severity_probs = self.get_predictions_and_probs(severity_pred)
+
+        # Decode predictions
+        actionclass = [self.action_class_map[label.item()] for label in actionclass_pred_labels]
+        bodypart = [self.bodypart_map[label.item()] for label in bodypart_pred_labels]
+        offence = [self.offence_map[label.item()] for label in offence_pred_labels]
+        touchball = [self.touchball_map[label.item()] for label in touchball_pred_labels]
+        trytoplay = [self.trytoplay_map[label.item()] for label in trytoplay_pred_labels]
+        severity = [self.severity_map[label.item()] for label in severity_pred_labels]
+
+        # Print the decoded outputs with probabilities
+        print("Decoded Predictions with Probabilities:")
+        print(f"Action Class: {[x.decode('utf-8') for x in actionclass]} - Probabilities: {actionclass_probs}")
+        print(f"Body Part: {[x.decode('utf-8') for x in bodypart]} - Probabilities: {bodypart_probs}")
+        print(f"Offence: {[x.decode('utf-8') for x in offence]} - Probabilities: {offence_probs}")
+        print(f"Touchball: {[x.decode('utf-8') for x in touchball]} - Probabilities: {touchball_probs}")
+        print(f"Try to Play: {[x.decode('utf-8') for x in trytoplay]} - Probabilities: {trytoplay_probs}")
+        print(f"Severity: {[x.decode('utf-8') for x in severity]} - Probabilities: {severity_probs}")
+
+--- training/FoulDataPreprocessor.py ---
+import os
+import logging
+import torch
+from feature_engineering.HDF5Reader import read_from_hdf5
+
+class FoulDataPreprocessor:
+    def __init__(self):
+        self.action_class_map = {
+            b'Standing tackling': 0, b'Tackling': 1, b'Holding': 2,
+            b'Challenge': 3, b'Elbowing': 4, b'High leg': 5,
+            b'Pushing': 6, b'Dive': 7
+        }
+        
+        self.bodypart_map = {
+            b'Under body': 0, b'Use of arms': 1,
+            b'Use of shoulder': 2, b'Upper body': 3
+        }
+        
+        self.offence_map = {
+            b'Offence': 2, b'No offence': 0, b'Between': 1
+        }
+        
+        self.touchball_map = {
+            b'No': 0, b'Yes': 2, b'Maybe': 1
+        }
+        
+        self.trytoplay_map = {
+            b'No': 0, b'Yes': 1
+        }
+        
+        self.severity_map = {
+            b'1.0': 0,
+            b'2.0': 1,
+            b'3.0': 2,
+            b'4.0': 3,
+            b'5.0': 4
+        }
+        
+        self.target_camera = b'Close-up player or field referee'
+
+    def get_class_weights(self, labels, num_classes):
+        """Calculate class weights for imbalanced classes."""
+        counts = torch.bincount(labels, minlength=num_classes)
+        total = len(labels)
+        weights = total / (counts * num_classes)
+        return weights
+
+    def is_valid_features(self, video_features):
+        """Check if video features are valid (non-empty and non-zero)."""
+        return (video_features is not None and 
+                isinstance(video_features, torch.Tensor) and 
+                video_features.numel() > 0 and 
+                not torch.all(video_features == 0))
+
+    def encode_labels(self, action):
+        """Encode categorical variables into numerical labels."""
+        return {
+            'actionclass': self.action_class_map[action['actionclass']],
+            'bodypart': self.bodypart_map[action['bodypart']],
+            'offence': self.offence_map[action['offence']],
+            'severity': self.severity_map[action['severity']],
+            'touchball': self.touchball_map[action['touchball']],
+            'trytoplay': self.trytoplay_map[action['trytoplay']]
+        }
+    
+    def process_data(self, input_file):
+        """Process and reshape the data for deep learning."""
+        if not os.path.exists(input_file):
+            logging.error(f"File not found: {input_file}")
+            return None
+            
+        actions = read_from_hdf5(input_file)
+        
+        features = []
+        labels = []
+        
+        # Track statistics
+        total_actions = len(actions)
+        processed_actions = 0
+        skipped_no_target_camera = 0
+        skipped_empty_features = 0
+        
+        for action_idx, action in enumerate(actions):
+            # Track target camera clips
+            target_camera_count = 0
+            valid_features = []
+
+            # Process clips
+            for clip in action['clips']:
+                if clip['Camera type'] == self.target_camera:
+                    target_camera_count += 1
+                    
+                    # Skip empty features
+                    if not self.is_valid_features(clip['video_features']):
+                        skipped_empty_features += 1
+                        continue
+                    
+                    # Extract and combine features
+                    video_features = clip['video_features'].squeeze()
+                    replay_speed = torch.tensor([float(clip['Replay speed'])])
+                    combined_features = torch.cat([video_features, replay_speed])
+                    valid_features.append(combined_features)
+            
+            # Log target camera count
+            # logging.info(f"Action {action_idx + 1}/{total_actions}: {target_camera_count} target camera clips.")
+
+            # Check if action is valid
+            if not valid_features:
+                skipped_no_target_camera += 1
+                continue
+
+            processed_actions += 1
+            encoded_labels = self.encode_labels(action)
+            features.extend(valid_features)
+            labels.extend([encoded_labels] * len(valid_features))
+        
+        # Log statistics
+        logging.info(f"\nProcessing Summary:")
+        logging.info(f"Total actions: {total_actions}")
+        logging.info(f"Processed actions: {processed_actions}")
+        logging.info(f"Skipped actions (no target camera): {skipped_no_target_camera}")
+        logging.info(f"Skipped clips (empty features): {skipped_empty_features}")
+        
+        if not features:
+            logging.error("No valid features found in the dataset")
+            return None
+            
+        # Stack features and convert labels
+        X = torch.stack(features)
+        y = {
+            'actionclass': torch.tensor([label['actionclass'] for label in labels]),
+            'bodypart': torch.tensor([label['bodypart'] for label in labels]),
+            'offence': torch.tensor([label['offence'] for label in labels]),
+            'severity': torch.tensor([label['severity'] for label in labels]),
+            'touchball': torch.tensor([label['touchball'] for label in labels]),
+            'trytoplay': torch.tensor([label['trytoplay'] for label in labels])
+        }
+        
+        logging.info(f"Final dataset shape: {X.shape}")
+        logging.info(f"Features per action: {len(features) / processed_actions:.2f}")
+        return X, y
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+    preprocessor = FoulDataPreprocessor()
+    input_file = 'data/dataset/train/train_features.h5'
+    
+    X, y = preprocessor.process_data(input_file)
+    
+    if X is not None:
+        # Calculate class weights for each task
+        class_weights = {
+            'actionclass': preprocessor.get_class_weights(y['actionclass'], len(preprocessor.action_class_map)),
+            'bodypart': preprocessor.get_class_weights(y['bodypart'], len(preprocessor.bodypart_map)),
+            'offence': preprocessor.get_class_weights(y['offence'], len(preprocessor.offence_map)),
+            'touchball': preprocessor.get_class_weights(y['touchball'], len(preprocessor.touchball_map)),
+            'trytoplay': preprocessor.get_class_weights(y['trytoplay'], len(preprocessor.trytoplay_map)),
+            'severity': preprocessor.get_class_weights(y['severity'], len(preprocessor.severity_map))
+        }
+        return X, y, class_weights
+
+if __name__ == "__main__":
+    main()
+
+
+
 
 --- train.py ---
 import torch
