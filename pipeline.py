@@ -4,14 +4,14 @@ import os
 import logging
 from pathlib import Path
 import torch
-from typing import Optional, Tuple, Dict, List, Union
+from typing import Optional, Dict
 
 from feature_engineering.FeatureExtractor import FeatureExtractor
 from feature_engineering.ActionData import ActionData
-from feature_engineering.HDF5Reader import save_to_hdf5, read_from_hdf5
+from feature_engineering.HDF5Reader import save_to_hdf5
 from training.FoulDataPreprocessor import FoulDataPreprocessor
 from training.Decoder import Decoder
-from train import MultiTaskModel, train_model, save_model, load_model
+from train import MultiTaskModel, train_model, save_model
 
 class FoulDetectionPipeline:
     """Main pipeline for training and inference in the foul detection system."""
