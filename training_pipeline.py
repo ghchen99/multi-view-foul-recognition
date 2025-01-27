@@ -27,6 +27,7 @@ class FoulTrainingPipeline:
         """Extract features for a specific dataset split."""
         return self.feature_extractor.extract_features(split, max_actions)
 
+    # TODO: incorporate validation set
     def train(self, train_file: str, valid_file: str, epochs: int = 100, 
              batch_size: int = 64, learning_rate: float = 0.0005) -> MultiTaskModel:
         """Train the model using the specified training and validation data."""
