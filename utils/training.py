@@ -5,8 +5,8 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-from training.FoulDataPreprocessor import FoulDataPreprocessor
-from training.Decoder import Decoder
+from utils.FoulDataPreprocessor import FoulDataPreprocessor
+from models.Decoder import Decoder
 
 class MultiTaskModel(nn.Module):
     def __init__(self, input_size, action_classes, bodypart_classes, offence_classes, touchball_classes, trytoplay_classes, severity_classes):
@@ -304,10 +304,6 @@ def main():
     }
     
     save_model(model, "foul_detection_model.pth", metadata)
-
-if __name__ == "__main__":
-    main()
-
 
 if __name__ == "__main__":
     main()

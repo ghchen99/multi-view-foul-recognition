@@ -41,7 +41,10 @@ class Decoder:
 
     def decode_predictions(self, actionclass_pred, bodypart_pred, offence_pred, touchball_pred, trytoplay_pred, severity_pred):
         """
-        Decodes predictions and prints them alongside their probabilities.
+        Decodes predictions and returns them alongside their probabilities in an array.
+        
+        Returns:
+            list: Array of dictionaries containing decoded predictions and their probabilities
         """
         # Get predictions and probabilities
         actionclass_pred_labels, actionclass_probs = self.get_predictions_and_probs(actionclass_pred)
@@ -59,11 +62,38 @@ class Decoder:
         trytoplay = [self.trytoplay_map[label.item()] for label in trytoplay_pred_labels]
         severity = [self.severity_map[label.item()] for label in severity_pred_labels]
 
-        # Print the decoded outputs with probabilities
-        print("Decoded Predictions with Probabilities:")
-        print(f"Action Class: {[x.decode('utf-8') for x in actionclass]} - Probabilities: {actionclass_probs}")
-        print(f"Body Part: {[x.decode('utf-8') for x in bodypart]} - Probabilities: {bodypart_probs}")
-        print(f"Offence: {[x.decode('utf-8') for x in offence]} - Probabilities: {offence_probs}")
-        print(f"Touchball: {[x.decode('utf-8') for x in touchball]} - Probabilities: {touchball_probs}")
-        print(f"Try to Play: {[x.decode('utf-8') for x in trytoplay]} - Probabilities: {trytoplay_probs}")
-        print(f"Severity: {[x.decode('utf-8') for x in severity]} - Probabilities: {severity_probs}")
+        # Create results array
+        results = [
+            {
+                "category": "Action Class",
+                "predictions": [x.decode('utf-8') for x in actionclass],
+                "probabilities": actionclass_probs
+            },
+            {
+                "category": "Body Part",
+                "predictions": [x.decode('utf-8') for x in bodypart],
+                "probabilities": bodypart_probs
+            },
+            {
+                "category": "Offence",
+                "predictions": [x.decode('utf-8') for x in offence],
+                "probabilities": offence_probs
+            },
+            {
+                "category": "Touchball",
+                "predictions": [x.decode('utf-8') for x in touchball],
+                "probabilities": touchball_probs
+            },
+            {
+                "category": "Try to Play",
+                "predictions": [x.decode('utf-8') for x in trytoplay],
+                "probabilities": trytoplay_probs
+            },
+            {
+                "category": "Severity",
+                "predictions": [x.decode('utf-8') for x in severity],
+                "probabilities": severity_probs
+            }
+        ]
+
+        return results
