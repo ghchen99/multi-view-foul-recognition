@@ -6,3 +6,5 @@ h5py
 torch
 torchvision
 numpy<2.0
+flask 
+flask-cors 

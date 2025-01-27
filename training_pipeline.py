@@ -5,8 +5,6 @@ import torch
 from typing import Optional, Dict
 
 from utils.FeatureExtractor import FeatureExtractor
-from models.ActionData import ActionData
-from utils.HDF5Reader import save_to_hdf5
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
 from utils.training import MultiTaskModel, train_model, save_model
 
