@@ -163,7 +163,7 @@ def main():
     try:
         # Extract features for test set
         logging.info("Extracting test features...")
-        test_features = pipeline.extract_features('test', max_actions=None)
+        # test_features = pipeline.extract_features('test', max_actions=None)
         
         test_features = 'data/dataset/test/test_features.h5'
         

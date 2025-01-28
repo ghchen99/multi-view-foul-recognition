@@ -1,0 +1,316 @@
+Test Evaluation Results
+==================================================
+
+
+ACTION CLASS
+------------
+
+Accuracy: 0.1105
+
+Classification Report:
+
+Class 0:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 157.0000
+
+Class 1:
+  precision: 0.6429
+  recall: 0.2609
+  f1-score: 0.3711
+  support: 69.0000
+
+Class 2:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 37.0000
+
+Class 3:
+  precision: 0.1136
+  recall: 0.0893
+  f1-score: 0.1000
+  support: 56.0000
+
+Class 4:
+  precision: 0.2222
+  recall: 0.4800
+  f1-score: 0.3038
+  support: 25.0000
+
+Class 5:
+  precision: 0.0588
+  recall: 0.1818
+  f1-score: 0.0889
+  support: 11.0000
+
+Class 6:
+  precision: 0.0089
+  recall: 0.1250
+  f1-score: 0.0167
+  support: 8.0000
+
+Class 7:
+  precision: 0.0303
+  recall: 0.3750
+  f1-score: 0.0561
+  support: 8.0000
+
+Class macro avg:
+  precision: 0.1346
+  recall: 0.1890
+  f1-score: 0.1171
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.1543
+  recall: 0.1105
+  f1-score: 0.1088
+  support: 371.0000
+
+Confusion Matrix:
+0 8 0 24 9 13 55 48
+0 18 0 6 1 2 16 26
+0 1 0 5 8 4 9 10
+0 1 0 5 13 11 17 9
+0 0 0 2 12 2 7 2
+0 0 0 0 5 2 4 0
+0 0 0 2 4 0 1 1
+0 0 0 0 2 0 3 3
+
+==================================================
+
+BODY PART
+---------
+
+Accuracy: 0.0539
+
+Classification Report:
+
+Class 0:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 244.0000
+
+Class 1:
+  precision: 0.1667
+  recall: 0.0563
+  f1-score: 0.0842
+  support: 71.0000
+
+Class 2:
+  precision: 0.1625
+  recall: 0.2453
+  f1-score: 0.1955
+  support: 53.0000
+
+Class 3:
+  precision: 0.0112
+  recall: 1.0000
+  f1-score: 0.0222
+  support: 3.0000
+
+Class macro avg:
+  precision: 0.0851
+  recall: 0.3254
+  f1-score: 0.0755
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.0552
+  recall: 0.0539
+  f1-score: 0.0442
+  support: 371.0000
+
+Confusion Matrix:
+0 18 54 172
+0 4 13 54
+0 2 13 38
+0 0 0 3
+
+==================================================
+
+OFFENCE
+-------
+
+Accuracy: 0.0593
+
+Classification Report:
+
+Class 0:
+  precision: 0.0743
+  recall: 0.4783
+  f1-score: 0.1287
+  support: 23.0000
+
+Class 1:
+  precision: 0.0493
+  recall: 0.6111
+  f1-score: 0.0913
+  support: 18.0000
+
+Class 2:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 330.0000
+
+Class macro avg:
+  precision: 0.0412
+  recall: 0.3631
+  f1-score: 0.0733
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.0070
+  recall: 0.0593
+  f1-score: 0.0124
+  support: 371.0000
+
+Confusion Matrix:
+11 12 0
+7 11 0
+130 200 0
+
+==================================================
+
+TOUCH BALL
+----------
+
+Accuracy: 0.0270
+
+Classification Report:
+
+Class 0:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 353.0000
+
+Class 1:
+  precision: 0.0052
+  recall: 0.2500
+  f1-score: 0.0102
+  support: 4.0000
+
+Class 2:
+  precision: 0.0503
+  recall: 0.6429
+  f1-score: 0.0933
+  support: 14.0000
+
+Class macro avg:
+  precision: 0.0185
+  recall: 0.2976
+  f1-score: 0.0345
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.0020
+  recall: 0.0270
+  f1-score: 0.0036
+  support: 371.0000
+
+Confusion Matrix:
+0 186 167
+0 1 3
+0 5 9
+
+==================================================
+
+TRY TO PLAY
+-----------
+
+Accuracy: 0.5121
+
+Classification Report:
+
+Class 0:
+  precision: 0.4650
+  recall: 0.9684
+  f1-score: 0.6283
+  support: 158.0000
+
+Class 1:
+  precision: 0.8810
+  recall: 0.1737
+  f1-score: 0.2902
+  support: 213.0000
+
+Class macro avg:
+  precision: 0.6730
+  recall: 0.5710
+  f1-score: 0.4593
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.7038
+  recall: 0.5121
+  f1-score: 0.4342
+  support: 371.0000
+
+Confusion Matrix:
+153 5
+176 37
+
+==================================================
+
+SEVERITY
+--------
+
+Accuracy: 0.0243
+
+Classification Report:
+
+Class 0:
+  precision: 1.0000
+  recall: 0.0085
+  f1-score: 0.0169
+  support: 235.0000
+
+Class 1:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 38.0000
+
+Class 2:
+  precision: 0.0000
+  recall: 0.0000
+  f1-score: 0.0000
+  support: 87.0000
+
+Class 3:
+  precision: 0.0242
+  recall: 0.6000
+  f1-score: 0.0465
+  support: 5.0000
+
+Class 4:
+  precision: 0.0163
+  recall: 0.6667
+  f1-score: 0.0319
+  support: 6.0000
+
+Class macro avg:
+  precision: 0.2081
+  recall: 0.2550
+  f1-score: 0.0191
+  support: 371.0000
+
+Class weighted avg:
+  precision: 0.6340
+  recall: 0.0243
+  f1-score: 0.0118
+  support: 371.0000
+
+Confusion Matrix:
+2 0 0 76 157
+0 0 0 15 23
+0 0 0 28 59
+0 0 0 3 2
+0 0 0 2 4
+
+==================================================
