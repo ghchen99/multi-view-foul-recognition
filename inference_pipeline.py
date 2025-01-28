@@ -174,7 +174,7 @@ class FoulInferencePipeline:
 
 def main():
     """Run the inference pipeline on a test video."""
-    model_path = "pretrained_models/20250128_161115/foul_detection_model.pth"
+    model_path = "pretrained_models/20250128_215716/foul_detection_model.pth"
     pipeline = FoulInferencePipeline(model_path)
     
     try:
