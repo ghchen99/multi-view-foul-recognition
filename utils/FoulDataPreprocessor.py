@@ -1,7 +1,7 @@
 import os
 import logging
 import torch
-from feature_engineering.HDF5Reader import read_from_hdf5
+from utils.HDF5Reader import read_from_hdf5
 
 class FoulDataPreprocessor:
     def __init__(self):
