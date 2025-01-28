@@ -142,7 +142,7 @@ def main():
         model = pipeline.train(
             train_file=train_features,
             valid_file=valid_features,
-            epochs=100,
+            epochs=150,
             batch_size=64,
             learning_rate=0.0005
         )

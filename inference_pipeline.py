@@ -147,24 +147,21 @@ class FoulInferencePipeline:
             }
             
             for task, probs in predictions.items():
-                top_k = min(3, probs.shape[1])  # Get top-3 or all if less than 3 classes
-                top_probs, top_indices = torch.topk(torch.from_numpy(probs[0]), k=top_k)
+                # Get only the top probability
+                top_prob, top_idx = torch.max(torch.from_numpy(probs[0]), dim=0)
                 
                 # Get the mapping for this task
                 task_map = task_to_map[task]
                 
-                # Decode predictions using the appropriate map
-                decoded_classes = [
-                    task_map[idx.item()].decode('utf-8') 
-                    for idx in top_indices
-                ]
+                # Decode prediction using the appropriate map
+                decoded_class = task_map[top_idx.item()].decode('utf-8')
                 
-                category_preds = {
+                category_pred = {
                     'category': display_names[task],
-                    'predictions': decoded_classes,
-                    'probabilities': top_probs.numpy()
+                    'prediction': decoded_class,
+                    'probability': top_prob.item()
                 }
-                decoded_predictions.append(category_preds)
+                decoded_predictions.append(category_pred)
             
             return decoded_predictions
             
@@ -174,7 +171,7 @@ class FoulInferencePipeline:
 
 def main():
     """Run the inference pipeline on a test video."""
-    model_path = "pretrained_models/20250128_215716/foul_detection_model.pth"
+    model_path = "pretrained_models/20250128_223835/foul_detection_model.pth"
     pipeline = FoulInferencePipeline(model_path)
     
     try:
@@ -196,10 +193,9 @@ def main():
         print("\nDecoded Predictions with Probabilities:")
         print("=" * 50)
         for category in predictions:
+            confidence = "▓" * int(category['probability'] * 20) + "░" * (20 - int(category['probability'] * 20))
             print(f"\n{category['category'].upper()}:")
-            for pred, prob in zip(category['predictions'], category['probabilities']):
-                confidence = "▓" * int(prob * 20) + "░" * (20 - int(prob * 20))
-                print(f"  • {pred:<20} [{confidence}] {prob:.1%}")
+            print(f"  • {category['prediction']:<20} [{confidence}] {category['probability']:.1%}")
         
         logging.info("Inference pipeline completed successfully!")
         

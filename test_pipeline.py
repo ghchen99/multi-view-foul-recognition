@@ -157,7 +157,7 @@ class FoulTestPipeline:
 
 def main():
     """Run the test pipeline."""
-    model_path = "pretrained_models/20250128_215716/foul_detection_model.pth"
+    model_path = "pretrained_models/20250128_223835/foul_detection_model.pth"
     pipeline = FoulTestPipeline(model_path)
     
     try:

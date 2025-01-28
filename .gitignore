@@ -64,5 +64,6 @@ coverage/
 # data
 data/dataset/
 pretrained_models/
+test_results/
 
 foul_detection_model.pth
