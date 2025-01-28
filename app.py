@@ -46,72 +46,31 @@ def validate_video_file(file) -> None:
     if not allowed_file(file.filename):
         raise APIError(f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}', 400)
 
-def tensor_to_python(obj):
-    """Convert PyTorch tensors to Python native types"""
-    import torch
-    if isinstance(obj, torch.Tensor):
-        return obj.item() if obj.numel() == 1 else obj.tolist()
-    elif isinstance(obj, dict):
-        return {k: tensor_to_python(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [tensor_to_python(item) for item in obj]
-    return obj
-
 def format_predictions(raw_predictions: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Format predictions into a structured response.
-    Handles both single float predictions and structured prediction formats.
+    Format predictions from the new model structure into the existing API response format.
+    The new model returns a list of dictionaries with category, prediction, and probability.
     """
     try:
-        # Handle case where raw_predictions is a single float
-        if isinstance(raw_predictions, (float, int)):
-            return {
-                'predictions': [{
-                    'category': 'default',
-                    'details': [{
-                        'prediction': 'score',
-                        'probability': float(raw_predictions)
-                    }]
+        formatted_predictions = []
+        for pred in raw_predictions:
+            category_result = {
+                'category': pred['category'],
+                'details': [{
+                    'prediction': str(pred['prediction']),
+                    'probability': float(pred['probability'])
                 }]
             }
-        
-        # Handle case where raw_predictions is already a list of predictions
-        formatted_predictions = []
-        for category in raw_predictions:
-            category_results = {
-                'category': category['category'],
-                'details': []
-            }
-            
-            # Handle both list and single value predictions
-            predictions = category.get('predictions', [])
-            probabilities = category.get('probabilities', [])
-            
-            # Ensure predictions and probabilities are lists
-            if not isinstance(predictions, list):
-                predictions = [predictions]
-            if not isinstance(probabilities, list):
-                probabilities = [probabilities]
-            
-            # Combine predictions and probabilities
-            for pred, prob in zip(predictions, probabilities):
-                category_results['details'].append({
-                    'prediction': str(pred),
-                    'probability': float(prob)
-                })
-            
-            formatted_predictions.append(category_results)
+            formatted_predictions.append(category_result)
             
             # Log in a nice format
-            logger.info(f"\n{category['category']}:")
-            for detail in category_results['details']:
-                logger.info(f"  • {detail['prediction']:<20} {detail['probability']:.2%}")
+            logger.info(f"\n{pred['category']}:")
+            logger.info(f"  • {pred['prediction']:<20} {pred['probability']:.2%}")
                 
         return {'predictions': formatted_predictions}
         
     except Exception as e:
         logger.error(f"Error formatting predictions structure: {str(e)}")
-        # Log the raw predictions for debugging
         logger.debug(f"Raw predictions structure: {raw_predictions}")
         raise
 
@@ -130,11 +89,8 @@ def process_video(video_file) -> Tuple[str, Dict[str, Any]]:
             logger.info("Running inference...")
             raw_predictions = pipeline.inference(features_path)
             
-            # Convert any tensors to Python types before formatting
-            predictions = tensor_to_python(raw_predictions)
-            
             # Format predictions using the enhanced formatter
-            formatted_predictions = format_predictions(predictions)
+            formatted_predictions = format_predictions(raw_predictions)
             
             logger.info("Inference completed successfully!")
             return features_path, formatted_predictions
@@ -163,7 +119,7 @@ def cleanup_files(*files: str) -> None:
 
 # Initialize pipeline with error handling
 try:
-    pipeline = FoulInferencePipeline(model_path="foul_detection_model.pth")
+    pipeline = FoulInferencePipeline(model_path="pretrained_models/20250128_223835/foul_detection_model.pth")
 except Exception as e:
     logger.critical(f"Failed to initialize inference pipeline: {str(e)}")
     raise
@@ -189,8 +145,6 @@ def process_video_endpoint():
         
         # Process video
         features_path, predictions = process_video(video_file)
-        
-        # TODO: Return predictions as TTS referee response using GPT / hardcoded string
         
         return jsonify({
             'status': 'success',
