@@ -8,3 +8,4 @@ torchvision
 numpy<2.0
 flask 
 flask-cors 
+scikit-learn

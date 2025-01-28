@@ -1,0 +1,39 @@
+{
+  "action_class_map": {
+    "Standing tackling": "0",
+    "Tackling": "1",
+    "Holding": "2",
+    "Challenge": "3",
+    "Elbowing": "4",
+    "High leg": "5",
+    "Pushing": "6",
+    "Dive": "7"
+  },
+  "bodypart_map": {
+    "Under body": "0",
+    "Use of arms": "1",
+    "Use of shoulder": "2",
+    "Upper body": "3"
+  },
+  "offence_map": {
+    "Offence": "2",
+    "No offence": "0",
+    "Between": "1"
+  },
+  "touchball_map": {
+    "No": "0",
+    "Yes": "2",
+    "Maybe": "1"
+  },
+  "trytoplay_map": {
+    "No": "0",
+    "Yes": "1"
+  },
+  "severity_map": {
+    "1.0": "0",
+    "2.0": "1",
+    "3.0": "2",
+    "4.0": "3",
+    "5.0": "4"
+  }
+}

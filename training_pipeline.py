@@ -3,10 +3,11 @@ import logging
 from pathlib import Path
 import torch
 from typing import Optional, Dict
+from datetime import datetime
 
 from utils.FeatureExtractor import FeatureExtractor
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
-from utils.training import MultiTaskModel, train_model, save_model
+from utils.training import ImprovedMultiTaskModel, train_model, save_model
 
 class FoulTrainingPipeline:
     """Pipeline for training the foul detection model."""
@@ -28,7 +29,7 @@ class FoulTrainingPipeline:
         return self.feature_extractor.extract_features(split, max_actions)
 
     def train(self, train_file: str, valid_file: str, epochs: int = 100, 
-          batch_size: int = 64, learning_rate: float = 0.0005) -> MultiTaskModel:
+              batch_size: int = 64, learning_rate: float = 0.0005) -> ImprovedMultiTaskModel:
         """Train the model using the specified training and validation data."""
         logging.info("Starting model training...")
         
@@ -41,6 +42,9 @@ class FoulTrainingPipeline:
             
         # Calculate class weights from training data only
         class_weights = self._calculate_class_weights(y_train)
+        
+        # Get input scaler if preprocessing includes scaling
+        scaler = getattr(self.preprocessor, 'scaler', None)
         
         # Train model
         model, history = train_model(
@@ -55,19 +59,25 @@ class FoulTrainingPipeline:
             learning_rate=learning_rate
         )
         
-        # Save model with metadata
-        metadata = {
-            'input_size': X_train.shape[1],
-            'action_classes': len(class_weights['actionclass']),
-            'bodypart_classes': len(class_weights['bodypart']),
-            'offence_classes': len(class_weights['offence']),
-            'touchball_classes': len(class_weights['touchball']),
-            'trytoplay_classes': len(class_weights['trytoplay']),
-            'severity_classes': len(class_weights['severity']),
-            'training_history': history
-        }
+        # Create model save directory with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_dir = Path("pretrained_models") / timestamp
+        save_dir.mkdir(parents=True, exist_ok=True)
         
-        save_model(model, "foul_detection_model.pth", metadata)
+        # Save the model with all components
+        model_path = save_dir / "foul_detection_model.pth"
+        save_model(
+            model=model,
+            file_path=str(model_path),
+            class_weights=class_weights,
+            training_history=history,
+            scaler=scaler
+        )
+        
+        # Save additional metadata for reference
+        self._save_mapping_info(save_dir)
+        
+        logging.info(f"Model and metadata saved to {save_dir}")
         return model
 
     def _calculate_class_weights(self, y_train: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
@@ -86,6 +96,33 @@ class FoulTrainingPipeline:
             'severity': self.preprocessor.get_class_weights(
                 y_train['severity'], len(self.preprocessor.severity_map))
         }
+    
+    def _save_mapping_info(self, save_dir: Path) -> None:
+        """Save label mapping information."""
+        import json
+
+        def convert_bytes_to_str(mapping):
+            """Convert bytes keys/values to strings in a mapping."""
+            converted = {}
+            for k, v in mapping.items():
+                # Convert key from bytes to str if needed
+                key = k.decode('utf-8') if isinstance(k, bytes) else str(k)
+                # Convert value from bytes to str if needed
+                value = v.decode('utf-8') if isinstance(v, bytes) else str(v)
+                converted[key] = value
+            return converted
+        
+        mapping_info = {
+            'action_class_map': convert_bytes_to_str(self.preprocessor.action_class_map),
+            'bodypart_map': convert_bytes_to_str(self.preprocessor.bodypart_map),
+            'offence_map': convert_bytes_to_str(self.preprocessor.offence_map),
+            'touchball_map': convert_bytes_to_str(self.preprocessor.touchball_map),
+            'trytoplay_map': convert_bytes_to_str(self.preprocessor.trytoplay_map),
+            'severity_map': convert_bytes_to_str(self.preprocessor.severity_map)
+        }
+        
+        with open(save_dir / 'label_mappings.json', 'w') as f:
+            json.dump(mapping_info, f, indent=2)
 
 def main():
     """Run the training pipeline."""

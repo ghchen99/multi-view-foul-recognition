@@ -4,30 +4,43 @@ class Decoder:
     def __init__(self):
         # Define mappings for decoding
         self.action_class_map = {
-            0: b'Standing tackling', 1: b'Tackling', 2: b'Holding',
-            3: b'Challenge', 4: b'Elbowing', 5: b'High leg',
-            6: b'Pushing', 7: b'Dive'
+            int(v): k.encode('utf-8') for k, v in {
+                'Standing tackling': '0', 'Tackling': '1', 'Holding': '2',
+                'Challenge': '3', 'Elbowing': '4', 'High leg': '5',
+                'Pushing': '6', 'Dive': '7'
+            }.items()
         }
         
         self.bodypart_map = {
-            0: b'Under body', 1: b'Use of arms',
-            2: b'Use of shoulder', 3: b'Upper body'
+            int(v): k.encode('utf-8') for k, v in {
+                'Under body': '0', 'Use of arms': '1',
+                'Use of shoulder': '2', 'Upper body': '3'
+            }.items()
         }
 
         self.offence_map = {
-            0: b'No offence', 1: b'Between', 2: b'Offence'
+            int(v): k.encode('utf-8') for k, v in {
+                'No offence': '0', 'Between': '1', 'Offence': '2'
+            }.items()
         }
         
         self.touchball_map = {
-            0: b'No', 1: b'Maybe', 2: b'Yes'
+            int(v): k.encode('utf-8') for k, v in {
+                'No': '0', 'Maybe': '1', 'Yes': '2'
+            }.items()
         }
 
         self.trytoplay_map = {
-            0: b'No', 1: b'Yes'
+            int(v): k.encode('utf-8') for k, v in {
+                'No': '0', 'Yes': '1'
+            }.items()
         }
         
         self.severity_map = {
-            0: b'1.0 No card', 1: b'2.0 Borderline No/Yellow', 2: b'3.0 Yellow card', 3: b'4.0 Yellow/ borderline Red', 4: b'5.0 Red card'
+            int(v): f"{float(k):.1f}{' No card' if k == '1.0' else ' Borderline No/Yellow' if k == '2.0' else ' Yellow card' if k == '3.0' else ' Yellow/ borderline Red' if k == '4.0' else ' Red card'}".encode('utf-8')
+            for k, v in {
+                '1.0': '0', '2.0': '1', '3.0': '2', '4.0': '3', '5.0': '4'
+            }.items()
         }
 
     def get_predictions_and_probs(self, predictions):
@@ -80,7 +93,7 @@ class Decoder:
                 "probabilities": offence_probs
             },
             {
-                "category": "Touchball",
+                "category": "Touch Ball",
                 "predictions": [x.decode('utf-8') for x in touchball],
                 "probabilities": touchball_probs
             },
