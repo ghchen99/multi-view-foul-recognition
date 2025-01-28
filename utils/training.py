@@ -55,12 +55,14 @@ class MultiTaskModel(nn.Module):
         
         return actionclass_output, bodypart_output, offence_output, touchball_output, trytoplay_output, severity_output
 
-def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, batch_size=64, learning_rate=0.001):
+def train_model(X_train, y_train, X_val, y_val, class_weights, severity_classes, epochs=20, batch_size=64, learning_rate=0.001):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Convert inputs and labels to tensors and move them to device
     X_train = X_train.to(device)
     y_train = {key: value.to(device) for key, value in y_train.items()}
+    X_val = X_val.to(device)
+    y_val = {key: value.to(device) for key, value in y_val.items()}
     
     # Initialize the model
     model = MultiTaskModel(
@@ -70,174 +72,159 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
         offence_classes=len(class_weights['offence']),
         touchball_classes=len(class_weights['touchball']),
         trytoplay_classes=len(class_weights['trytoplay']),
-        severity_classes=severity_classes  # Adding severity classes
+        severity_classes=severity_classes
     ).to(device)
 
     # Define loss functions and optimizer
-    criterion_actionclass = nn.CrossEntropyLoss(weight=class_weights['actionclass'].to(device))
-    criterion_bodypart = nn.CrossEntropyLoss(weight=class_weights['bodypart'].to(device))
-    criterion_offence = nn.CrossEntropyLoss(weight=class_weights['offence'].to(device))
-    criterion_touchball = nn.CrossEntropyLoss(weight=class_weights['touchball'].to(device))
-    criterion_trytoplay = nn.CrossEntropyLoss(weight=class_weights['trytoplay'].to(device))
-    criterion_severity = nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))  # Add loss for severity
+    criteria = {
+        'actionclass': nn.CrossEntropyLoss(weight=class_weights['actionclass'].to(device)),
+        'bodypart': nn.CrossEntropyLoss(weight=class_weights['bodypart'].to(device)),
+        'offence': nn.CrossEntropyLoss(weight=class_weights['offence'].to(device)),
+        'touchball': nn.CrossEntropyLoss(weight=class_weights['touchball'].to(device)),
+        'trytoplay': nn.CrossEntropyLoss(weight=class_weights['trytoplay'].to(device)),
+        'severity': nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))
+    }
 
-    # AdamW optimizer with weight decay for regularization
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-    
-    # Learning rate scheduler with ReduceLROnPlateau for better adaptive learning rate
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
-    
-    # Add gradient clipping to avoid exploding gradients
-    max_grad_norm = 1.0  # Set this to a suitable value
+    max_grad_norm = 1.0
 
-    model.train()
+    # Create DataLoaders for training and validation
+    train_dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], 
+                                y_train['offence'], y_train['touchball'], y_train['trytoplay'], 
+                                y_train['severity'])
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     
-    # Create DataLoader for batching
-    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], y_train['touchball'], y_train['trytoplay'], y_train['severity'])
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    val_dataset = TensorDataset(X_val, y_val['actionclass'], y_val['bodypart'], 
+                              y_val['offence'], y_val['touchball'], y_val['trytoplay'], 
+                              y_val['severity'])
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
 
-    # Initialize lists to store losses for plotting
-    total_losses = []
-    actionclass_losses = []
-    bodypart_losses = []
-    offence_losses = []
-    touchball_losses = []
-    trytoplay_losses = []
-    severity_losses = []  # Add list for severity losses
+    # Initialize loss tracking
+    best_val_loss = float('inf')
+    patience = 10
+    patience_counter = 0
+    best_model_state = None
+
+    history = {
+        'train_loss': [], 'val_loss': [],
+        'train_losses': {k: [] for k in criteria.keys()},
+        'val_losses': {k: [] for k in criteria.keys()}
+    }
+
+    def evaluate(model, data_loader, criteria):
+        model.eval()
+        total_loss = 0
+        task_losses = {k: 0 for k in criteria.keys()}
+        
+        with torch.no_grad():
+            for inputs, *labels in data_loader:
+                inputs = inputs.to(device)
+                labels = [label.to(device) for label in labels]
+                outputs = model(inputs)
+                
+                for i, (task, criterion) in enumerate(criteria.items()):
+                    loss = criterion(outputs[i], labels[i])
+                    task_losses[task] += loss.item()
+                    total_loss += loss.item()
+        
+        avg_loss = total_loss / len(data_loader)
+        avg_task_losses = {k: v / len(data_loader) for k, v in task_losses.items()}
+        return avg_loss, avg_task_losses
 
     for epoch in range(epochs):
-        total_loss = 0
-        total_loss_actionclass = 0
-        total_loss_bodypart = 0
-        total_loss_offence = 0
-        total_loss_touchball = 0
-        total_loss_trytoplay = 0
-        total_loss_severity = 0  # Add variable for severity loss
+        model.train()
+        train_total_loss = 0
+        train_task_losses = {k: 0 for k in criteria.keys()}
         
-        for inputs, actionclass_labels, bodypart_labels, offence_labels, touchball_labels, trytoplay_labels, severity_labels in data_loader:
+        # Training loop
+        for inputs, *labels in train_loader:
             inputs = inputs.to(device)
-            actionclass_labels = actionclass_labels.to(device)
-            bodypart_labels = bodypart_labels.to(device)
-            offence_labels = offence_labels.to(device)
-            touchball_labels = touchball_labels.to(device)
-            trytoplay_labels = trytoplay_labels.to(device)
-            severity_labels = severity_labels.to(device)  # Add severity labels
+            labels = [label.to(device) for label in labels]
             
             optimizer.zero_grad()
-            
-            # Forward pass
             outputs = model(inputs)
             
-            # Calculate loss for each task
-            loss_actionclass = criterion_actionclass(outputs[0], actionclass_labels)
-            loss_bodypart = criterion_bodypart(outputs[1], bodypart_labels)
-            loss_offence = criterion_offence(outputs[2], offence_labels)
-            loss_touchball = criterion_touchball(outputs[3], touchball_labels)
-            loss_trytoplay = criterion_trytoplay(outputs[4], trytoplay_labels)
-            loss_severity = criterion_severity(outputs[5], severity_labels)  # Calculate loss for severity
+            batch_loss = 0
+            for i, (task, criterion) in enumerate(criteria.items()):
+                loss = criterion(outputs[i], labels[i])
+                train_task_losses[task] += loss.item()
+                batch_loss += loss
             
-            # Total loss (with optional weighting for tasks)
-            total_loss_batch = loss_actionclass + loss_bodypart + loss_offence + loss_touchball + loss_trytoplay + loss_severity
-            total_loss_batch.backward()
-            
-            # Gradient clipping
+            batch_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-
             optimizer.step()
             
-            total_loss += total_loss_batch.item()
-            total_loss_actionclass += loss_actionclass.item()
-            total_loss_bodypart += loss_bodypart.item()
-            total_loss_offence += loss_offence.item()
-            total_loss_touchball += loss_touchball.item()
-            total_loss_trytoplay += loss_trytoplay.item()
-            total_loss_severity += loss_severity.item()  # Add severity loss
+            train_total_loss += batch_loss.item()
 
-        # Step learning rate scheduler
-        scheduler.step(total_loss)
-
-        # Append loss values to lists for plotting
-        total_losses.append(total_loss)
-        actionclass_losses.append(total_loss_actionclass)
-        bodypart_losses.append(total_loss_bodypart)
-        offence_losses.append(total_loss_offence)
-        touchball_losses.append(total_loss_touchball)
-        trytoplay_losses.append(total_loss_trytoplay)
-        severity_losses.append(total_loss_severity)  # Append severity loss
-
-        logging.info(f"Epoch [{epoch + 1}/{epochs}], "
-                    f"Total Loss: {total_loss:.4f}, "
-                    f"Action Class Loss: {total_loss_actionclass:.4f}, "
-                    f"Body Part Loss: {total_loss_bodypart:.4f}, "
-                    f"Offence Loss: {total_loss_offence:.4f}, "
-                    f"Touchball Loss: {total_loss_touchball:.4f}, "
-                    f"Try To Play Loss: {total_loss_trytoplay:.4f}, "
-                    f"Severity Loss: {total_loss_severity:.4f}")  # Log severity loss
+        # Calculate average training losses
+        avg_train_loss = train_total_loss / len(train_loader)
+        avg_train_task_losses = {k: v / len(train_loader) for k, v in train_task_losses.items()}
+        
+        # Validation phase
+        val_loss, val_task_losses = evaluate(model, val_loader, criteria)
+        
+        # Update learning rate scheduler
+        scheduler.step(val_loss)
+        
+        # Early stopping check
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model_state = model.state_dict()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                logging.info(f"Early stopping triggered at epoch {epoch + 1}")
+                break
+        
+        # Update history
+        history['train_loss'].append(avg_train_loss)
+        history['val_loss'].append(val_loss)
+        for task in criteria.keys():
+            history['train_losses'][task].append(avg_train_task_losses[task])
+            history['val_losses'][task].append(val_task_losses[task])
+        
+        # Log progress
+        logging.info(f"Epoch [{epoch + 1}/{epochs}] "
+                    f"Train Loss: {avg_train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        
+        for task in criteria.keys():
+            logging.info(f"{task.capitalize()} - Train: {avg_train_task_losses[task]:.4f}, "
+                        f"Val: {val_task_losses[task]:.4f}")
     
-    # After training, plot the loss curves
-    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses)
+    # Load best model state
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
     
-    return model
+    # Plot training history
+    plot_training_history(history)
+    
+    return model, history
 
-
-
-def plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses):
-    """
-    Plot the training loss curves for each task.
-    """
-    epochs = range(1, len(total_losses) + 1)
-
-    plt.figure(figsize=(12, 8))
+def plot_training_history(history):
+    """Plot training and validation losses."""
+    plt.figure(figsize=(15, 10))
     
     # Plot total loss
-    plt.subplot(2, 4, 1)
-    plt.plot(epochs, total_losses, label='Total Loss', color='blue')
-    plt.title('Total Loss')
-    plt.xlabel('Epochs')
+    plt.subplot(2, 1, 1)
+    plt.plot(history['train_loss'], label='Training Loss')
+    plt.plot(history['val_loss'], label='Validation Loss')
+    plt.title('Total Loss Over Time')
+    plt.xlabel('Epoch')
     plt.ylabel('Loss')
-
-    # Plot action class loss
-    plt.subplot(2, 4, 2)
-    plt.plot(epochs, actionclass_losses, label='Action Class Loss', color='red')
-    plt.title('Action Class Loss')
-    plt.xlabel('Epochs')
+    plt.legend()
+    
+    # Plot task-specific losses
+    plt.subplot(2, 1, 2)
+    for task in history['train_losses'].keys():
+        plt.plot(history['train_losses'][task], label=f'{task} (Train)')
+        plt.plot(history['val_losses'][task], label=f'{task} (Val)', linestyle='--')
+    
+    plt.title('Task-Specific Losses Over Time')
+    plt.xlabel('Epoch')
     plt.ylabel('Loss')
-
-    # Plot body part loss
-    plt.subplot(2, 4, 3)
-    plt.plot(epochs, bodypart_losses, label='Body Part Loss', color='green')
-    plt.title('Body Part Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-
-    # Plot offence loss
-    plt.subplot(2, 4, 4)
-    plt.plot(epochs, offence_losses, label='Offence Loss', color='purple')
-    plt.title('Offence Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-
-    # Plot touchball loss
-    plt.subplot(2, 4, 5)
-    plt.plot(epochs, touchball_losses, label='Touchball Loss', color='orange')
-    plt.title('Touchball Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-
-    # Plot try-to-play loss
-    plt.subplot(2, 4, 6)
-    plt.plot(epochs, trytoplay_losses, label='Try To Play Loss', color='brown')
-    plt.title('Try To Play Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-
-    # Plot severity loss
-    plt.subplot(2, 4, 7)
-    plt.plot(epochs, severity_losses, label='Severity Loss', color='cyan')
-    plt.title('Severity Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
 

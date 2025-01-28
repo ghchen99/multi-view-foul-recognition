@@ -27,25 +27,27 @@ class FoulTrainingPipeline:
         """Extract features for a specific dataset split."""
         return self.feature_extractor.extract_features(split, max_actions)
 
-    # TODO: incorporate validation set
     def train(self, train_file: str, valid_file: str, epochs: int = 100, 
-             batch_size: int = 64, learning_rate: float = 0.0005) -> MultiTaskModel:
+          batch_size: int = 64, learning_rate: float = 0.0005) -> MultiTaskModel:
         """Train the model using the specified training and validation data."""
         logging.info("Starting model training...")
         
-        # Process training data
+        # Process training and validation data
         X_train, y_train = self.preprocessor.process_data(train_file)
+        X_val, y_val = self.preprocessor.process_data(valid_file)
         
-        if X_train is None:
-            raise ValueError("Failed to process training data")
+        if X_train is None or X_val is None:
+            raise ValueError("Failed to process training or validation data")
             
-        # Calculate class weights
+        # Calculate class weights from training data only
         class_weights = self._calculate_class_weights(y_train)
         
         # Train model
-        model = train_model(
+        model, history = train_model(
             X_train=X_train,
             y_train=y_train,
+            X_val=X_val,
+            y_val=y_val,
             class_weights=class_weights,
             severity_classes=len(self.preprocessor.severity_map),
             epochs=epochs,
@@ -61,7 +63,8 @@ class FoulTrainingPipeline:
             'offence_classes': len(class_weights['offence']),
             'touchball_classes': len(class_weights['touchball']),
             'trytoplay_classes': len(class_weights['trytoplay']),
-            'severity_classes': len(class_weights['severity'])
+            'severity_classes': len(class_weights['severity']),
+            'training_history': history
         }
         
         save_model(model, "foul_detection_model.pth", metadata)
@@ -91,8 +94,11 @@ def main():
     try:
         # 1. Extract features for training and validation
         logging.info("Extracting features...")
-        train_features = pipeline.extract_features('train', max_actions=100)
-        valid_features = pipeline.extract_features('valid', max_actions=20)
+        # train_features = pipeline.extract_features('train', max_actions=None)
+        # valid_features = pipeline.extract_features('valid', max_actions=None)
+        
+        train_features = 'data/dataset/train/train_features.h5'
+        valid_features = 'data/dataset/valid/valid_features.h5'
         
         # 2. Train model
         logging.info("Training model...")

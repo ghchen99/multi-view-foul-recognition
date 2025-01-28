@@ -190,6 +190,8 @@ def process_video_endpoint():
         # Process video
         features_path, predictions = process_video(video_file)
         
+        # TODO: Return predictions as TTS referee response using GPT / hardcoded string
+        
         return jsonify({
             'status': 'success',
             **predictions  # Unpack formatted predictions
