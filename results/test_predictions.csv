@@ -1,0 +1,372 @@
+Action Class,Body Part,Offence,Touchball,Try to Play,Severity,Confidence
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9984317421913147
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.9992148876190186
+High leg,Under body,No offence,No,Yes,1.0 No card,0.9375853538513184
+Pushing,Use of arms,Offence,No,No,1.0 No card,0.8377050757408142
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9999247789382935
+Holding,Use of arms,Offence,No,No,1.0 No card,0.6571857333183289
+Pushing,Under body,Offence,No,No,1.0 No card,0.7911171913146973
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.8104172348976135
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9889601469039917
+Standing tackling,Under body,Offence,Yes,No,1.0 No card,0.594211995601654
+Holding,Use of arms,Offence,No,No,1.0 No card,0.9768814444541931
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9511003494262695
+High leg,Under body,Offence,Yes,Yes,1.0 No card,0.7057701945304871
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9850873947143555
+Holding,Use of arms,Offence,No,No,1.0 No card,0.997330904006958
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.5061840415000916
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.7578961849212646
+Challenge,Use of shoulder,Between,No,No,1.0 No card,0.9487757086753845
+Holding,Use of arms,No offence,No,No,1.0 No card,0.622938334941864
+Tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9809397459030151
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.6239109635353088
+High leg,Under body,No offence,No,No,1.0 No card,0.38826945424079895
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9992802739143372
+Pushing,Under body,No offence,No,Yes,1.0 No card,0.6377636790275574
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999134540557861
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.6550983786582947
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9987056255340576
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9855954647064209
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9960975646972656
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9978439807891846
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9998633861541748
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9849489331245422
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9966614246368408
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9988020658493042
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9949436783790588
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9969893097877502
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.9218195080757141
+Tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.7782619595527649
+Challenge,Use of arms,Between,No,No,4.0 Yellow/ borderline Red,0.7935178875923157
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.785550594329834
+Tackling,Under body,Offence,No,No,1.0 No card,0.3863719403743744
+High leg,Under body,Offence,No,Yes,1.0 No card,0.9695227146148682
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9847570657730103
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.8391406536102295
+Pushing,Under body,Offence,No,Yes,1.0 No card,0.6017840504646301
+High leg,Under body,Offence,No,No,3.0 Yellow card,0.7915835976600647
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9955369234085083
+Challenge,Use of shoulder,No offence,No,No,1.0 No card,0.9340749979019165
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.7819767594337463
+Tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.9988699555397034
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.6926900744438171
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9993557333946228
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.996957540512085
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9941907525062561
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9598097801208496
+Holding,Use of arms,No offence,No,No,1.0 No card,0.8786323666572571
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.997510552406311
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9963045120239258
+High leg,Under body,Offence,No,No,3.0 Yellow card,0.987074613571167
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.7052279710769653
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9986532926559448
+Challenge,Use of shoulder,No offence,No,No,1.0 No card,0.9978582262992859
+Elbowing,Under body,Offence,No,No,1.0 No card,0.3326502740383148
+High leg,Under body,Offence,No,No,1.0 No card,0.7440705895423889
+Challenge,Use of shoulder,No offence,No,No,1.0 No card,0.9957244396209717
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9950869679450989
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.8267890214920044
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9694366455078125
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9999855756759644
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.8727102875709534
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.5447528958320618
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999821186065674
+Standing tackling,Use of arms,Offence,No,No,1.0 No card,0.8668472170829773
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9916746020317078
+Challenge,Use of shoulder,Offence,No,Yes,1.0 No card,0.7048282027244568
+Holding,Use of arms,No offence,No,No,3.0 Yellow card,0.9374775290489197
+Challenge,Under body,No offence,No,No,1.0 No card,0.7321480512619019
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.6323543787002563
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.999728262424469
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.999998927116394
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.444703608751297
+Elbowing,Use of arms,Offence,No,No,1.0 No card,0.9996821880340576
+Holding,Use of arms,Offence,No,No,2.0 Borderline No/Yellow,0.542461097240448
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9794676899909973
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9992921352386475
+Pushing,Use of arms,Offence,No,No,3.0 Yellow card,0.5120449662208557
+Pushing,Use of arms,Offence,No,No,1.0 No card,0.8561899065971375
+Standing tackling,Under body,Offence,No,No,3.0 Yellow card,0.6329154372215271
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9999868869781494
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9916559457778931
+Tackling,Under body,No offence,Yes,Yes,3.0 Yellow card,0.9760926961898804
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9991464614868164
+Challenge,Use of arms,No offence,No,Yes,1.0 No card,0.3552725911140442
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9739689826965332
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9992819428443909
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.8307821154594421
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9787065386772156
+High leg,Under body,Offence,No,Yes,3.0 Yellow card,0.8328027725219727
+Tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.8867283463478088
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.997946560382843
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9999897480010986
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9652307629585266
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9933713674545288
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9987114667892456
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9987383484840393
+Standing tackling,Under body,Offence,No,No,3.0 Yellow card,0.7795701026916504
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.997416615486145
+Standing tackling,Under body,Between,No,No,1.0 No card,0.5172524452209473
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9965118765830994
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.7684162259101868
+High leg,Use of arms,No offence,No,No,1.0 No card,0.826328456401825
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9955564141273499
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9997496008872986
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.978499174118042
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9994823932647705
+Holding,Use of arms,Offence,No,No,1.0 No card,0.5425509214401245
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,1.0
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9249160289764404
+Tackling,Use of arms,No offence,No,Yes,1.0 No card,0.9910119771957397
+Challenge,Use of arms,No offence,No,No,1.0 No card,0.6884583234786987
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.965121328830719
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9990063309669495
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9767559766769409
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999517202377319
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.6843661069869995
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.7190004587173462
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.98752361536026
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9991849064826965
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9985106587409973
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9846459031105042
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9992877840995789
+Challenge,Use of arms,No offence,No,No,1.0 No card,0.8440885543823242
+Challenge,Use of arms,No offence,No,No,1.0 No card,0.42315027117729187
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9960421323776245
+Holding,Use of arms,Offence,No,No,1.0 No card,0.5818774700164795
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.6209469437599182
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9977096319198608
+Tackling,Under body,Offence,No,No,1.0 No card,0.7298410534858704
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9281425476074219
+Elbowing,Under body,Offence,No,No,3.0 Yellow card,0.9535838961601257
+Elbowing,Use of arms,Offence,No,No,1.0 No card,0.9628708362579346
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.7458605170249939
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.533337414264679
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.4450416564941406
+Holding,Use of arms,No offence,No,No,1.0 No card,0.43683135509490967
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.5838603377342224
+Elbowing,Use of arms,Offence,No,No,3.0 Yellow card,0.9938899278640747
+Tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.9952831864356995
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.8832637667655945
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999784231185913
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9057683944702148
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.999997615814209
+Challenge,Use of arms,No offence,No,No,1.0 No card,0.8417345881462097
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9967411160469055
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9998681545257568
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.8549013137817383
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.9991593360900879
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9984690546989441
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.8869853615760803
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9986018538475037
+Standing tackling,Under body,Offence,No,No,3.0 Yellow card,0.9806399345397949
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9589425325393677
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9108462333679199
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9994925260543823
+Standing tackling,Under body,Offence,Maybe,Yes,3.0 Yellow card,0.9994749426841736
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9982513785362244
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9760604500770569
+Holding,Use of arms,Offence,No,No,3.0 Yellow card,0.8017833828926086
+Holding,Use of arms,Offence,No,No,2.0 Borderline No/Yellow,0.8005590438842773
+High leg,Under body,No offence,No,No,1.0 No card,0.9139394760131836
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9999988079071045
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.8660330176353455
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999769926071167
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.9497949481010437
+Holding,Under body,Offence,No,Yes,1.0 No card,0.6353150010108948
+Standing tackling,Use of arms,No offence,No,No,1.0 No card,0.6400296688079834
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9737919569015503
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9645458459854126
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9987406134605408
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9971140623092651
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.991370677947998
+Standing tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.9842021465301514
+Holding,Use of arms,Offence,No,No,1.0 No card,0.8539162874221802
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9952776432037354
+Standing tackling,Upper body,Offence,No,Yes,1.0 No card,0.6074601411819458
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9733306169509888
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9275623559951782
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9856517314910889
+Standing tackling,Use of arms,No offence,No,No,1.0 No card,0.8159324526786804
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9888745546340942
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.6558415293693542
+Challenge,Use of shoulder,No offence,No,No,1.0 No card,0.8850052356719971
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9997223019599915
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9995430707931519
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9998062252998352
+Holding,Use of arms,Offence,No,Yes,1.0 No card,0.8177242875099182
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9676876068115234
+Pushing,Use of arms,No offence,No,No,1.0 No card,0.6618719100952148
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9253157377243042
+Standing tackling,Use of arms,No offence,Yes,No,1.0 No card,0.5757772922515869
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9293164610862732
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9831926822662354
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.5595226287841797
+Tackling,Under body,No offence,Yes,Yes,1.0 No card,0.8647834658622742
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9940652847290039
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9991379976272583
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9976310729980469
+Elbowing,Use of arms,No offence,No,No,1.0 No card,0.9954643845558167
+Challenge,Under body,Offence,No,Yes,1.0 No card,0.35560065507888794
+Holding,Use of arms,No offence,No,No,1.0 No card,0.6755588054656982
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9937491416931152
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9589827656745911
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9364489912986755
+Holding,Use of arms,Offence,No,No,3.0 Yellow card,0.7348527908325195
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.9916291236877441
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9926584362983704
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.7434541583061218
+Holding,Use of arms,Offence,No,No,1.0 No card,0.9932665824890137
+Holding,Use of arms,No offence,No,No,1.0 No card,0.994966447353363
+Tackling,Under body,No offence,Yes,No,1.0 No card,0.5419009923934937
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.652879536151886
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.557149350643158
+Holding,Use of arms,No offence,No,No,1.0 No card,0.9225029349327087
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9885393977165222
+Standing tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.9985364675521851
+Standing tackling,Under body,No offence,Yes,Yes,3.0 Yellow card,0.9910955429077148
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9639444351196289
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9905335903167725
+Tackling,Use of arms,Offence,No,Yes,1.0 No card,0.9900173544883728
+Standing tackling,Under body,Offence,Yes,Yes,3.0 Yellow card,0.913287341594696
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.7971109747886658
+Tackling,Under body,No offence,No,Yes,2.0 Borderline No/Yellow,0.7967311143875122
+Holding,Use of arms,Offence,No,Yes,1.0 No card,0.5905289053916931
+Standing tackling,Use of arms,No offence,No,Yes,2.0 Borderline No/Yellow,0.7758371233940125
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.5722265839576721
+Standing tackling,Use of shoulder,Offence,No,No,1.0 No card,0.6581779718399048
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9844469428062439
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9990572333335876
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.8541635870933533
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.5061025619506836
+Challenge,Use of arms,No offence,No,No,1.0 No card,0.4643722474575043
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9974486231803894
+Holding,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.930470883846283
+Elbowing,Use of arms,Offence,No,Yes,3.0 Yellow card,0.9659680128097534
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.9163573384284973
+Standing tackling,Use of shoulder,Offence,No,Yes,1.0 No card,0.7194279432296753
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.6089844107627869
+Tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.998180627822876
+Holding,Use of arms,Offence,No,No,1.0 No card,0.7519964575767517
+Holding,Use of arms,Offence,No,No,2.0 Borderline No/Yellow,0.8858015537261963
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.6823566555976868
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9775462746620178
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9560849666595459
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9351241588592529
+Standing tackling,Under body,Offence,No,No,3.0 Yellow card,0.9791359305381775
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.6225905418395996
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9994612336158752
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9989629983901978
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.8287635445594788
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.8190812468528748
+Holding,Use of arms,Offence,No,Yes,1.0 No card,0.6963362693786621
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9465880990028381
+Standing tackling,Use of arms,Offence,No,Yes,1.0 No card,0.6181921362876892
+Standing tackling,Under body,Offence,No,Yes,5.0 Red card,0.7543470859527588
+Standing tackling,Use of arms,Offence,No,No,3.0 Yellow card,0.7667017579078674
+Standing tackling,Use of arms,No offence,No,No,1.0 No card,0.33195438981056213
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.999988317489624
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9999289512634277
+Pushing,Use of arms,Offence,No,No,1.0 No card,0.39657342433929443
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9996925592422485
+Standing tackling,Use of arms,Offence,No,Yes,1.0 No card,0.5419068336486816
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.9992228746414185
+Challenge,Use of shoulder,No offence,No,No,3.0 Yellow card,0.9868330359458923
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9397321939468384
+Holding,Under body,Offence,No,No,1.0 No card,0.41097086668014526
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.9957626461982727
+Tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9988300204277039
+Standing tackling,Use of arms,Offence,No,Yes,1.0 No card,0.6065779328346252
+Holding,Use of arms,Offence,No,No,3.0 Yellow card,0.42682427167892456
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9977793097496033
+Standing tackling,Under body,No offence,No,No,2.0 Borderline No/Yellow,0.8890600800514221
+Tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9996575117111206
+Challenge,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.51988285779953
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9996300935745239
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9994426369667053
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.5085417032241821
+Holding,Under body,No offence,No,Yes,1.0 No card,0.4816471040248871
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.9996267557144165
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9929192662239075
+Elbowing,Use of arms,No offence,No,No,1.0 No card,0.7780715227127075
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.7928280234336853
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9843918085098267
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9621317386627197
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.6503645181655884
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.6016167402267456
+Tackling,Use of shoulder,Offence,No,No,1.0 No card,0.9953674077987671
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.5611986517906189
+Tackling,Under body,Between,No,Yes,1.0 No card,0.6315532326698303
+Holding,Use of arms,Offence,No,No,1.0 No card,0.8118384480476379
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9290140867233276
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9974568486213684
+Standing tackling,Use of arms,Offence,No,No,1.0 No card,0.339915931224823
+Standing tackling,Under body,No offence,No,Yes,2.0 Borderline No/Yellow,0.9795312881469727
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.6805881261825562
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9431698322296143
+Tackling,Under body,No offence,Yes,Yes,1.0 No card,0.7987908720970154
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9893859624862671
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.6312879323959351
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9999223947525024
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999464750289917
+High leg,Under body,Offence,No,Yes,3.0 Yellow card,0.5070822238922119
+Standing tackling,Under body,Offence,No,No,2.0 Borderline No/Yellow,0.9996724128723145
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9814759492874146
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999115467071533
+Holding,Use of arms,Offence,No,No,1.0 No card,0.6902521252632141
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.4481499195098877
+Tackling,Under body,No offence,No,Yes,1.0 No card,0.9873512387275696
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.9617253541946411
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9846686720848083
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.944570004940033
+High leg,Under body,No offence,Yes,Yes,1.0 No card,0.5423665046691895
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9252703189849854
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.957994818687439
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9997168183326721
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.999664306640625
+Standing tackling,Under body,Between,No,Yes,1.0 No card,0.9658722281455994
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.8982290625572205
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999934434890747
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9958301186561584
+Standing tackling,Use of arms,No offence,No,No,1.0 No card,0.7710825204849243
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.5615225434303284
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9982287287712097
+Challenge,Use of shoulder,Offence,No,No,2.0 Borderline No/Yellow,0.7946814298629761
+Challenge,Use of shoulder,Offence,No,No,1.0 No card,0.9795753359794617
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9999394416809082
+Standing tackling,Under body,Offence,Yes,Yes,1.0 No card,0.9994394183158875
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.9099384546279907
+Holding,Under body,Offence,No,Yes,1.0 No card,0.5794082880020142
+Holding,Use of arms,No offence,No,No,1.0 No card,0.884346067905426
+Pushing,Use of arms,Offence,No,No,1.0 No card,0.7031610012054443
+Tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9999990463256836
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.7108146548271179
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.9981968998908997
+High leg,Use of shoulder,Offence,No,No,1.0 No card,0.5665342211723328
+Standing tackling,Under body,No offence,No,Yes,1.0 No card,0.670281708240509
+Challenge,Use of arms,Offence,No,No,3.0 Yellow card,0.5050649642944336
+Challenge,Use of shoulder,No offence,No,No,1.0 No card,0.9721330404281616
+Tackling,Under body,Offence,No,Yes,1.0 No card,0.5236876010894775
+Standing tackling,Under body,No offence,No,No,1.0 No card,0.9573037624359131
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.8899979591369629
+Standing tackling,Under body,No offence,Yes,Yes,1.0 No card,0.5105468034744263
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.9485183358192444
+Elbowing,Use of shoulder,Offence,No,No,1.0 No card,0.9711474180221558
+High leg,Under body,Offence,No,Yes,1.0 No card,0.8359179496765137
+Challenge,Under body,Offence,No,No,1.0 No card,0.8800391554832458
+High leg,Under body,Offence,No,No,1.0 No card,0.6170991063117981
+High leg,Use of arms,No offence,No,No,1.0 No card,0.5649009346961975
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.99925297498703
+High leg,Under body,Offence,No,No,1.0 No card,0.8383188247680664
+Tackling,Under body,No offence,Yes,Yes,1.0 No card,0.9589043259620667
+Standing tackling,Under body,Offence,No,Yes,3.0 Yellow card,0.9330925941467285
+Tackling,Under body,No offence,No,No,1.0 No card,0.7226179838180542
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.8580285310745239
+Elbowing,Use of arms,Offence,No,No,1.0 No card,0.7695381045341492
+Standing tackling,Use of shoulder,Offence,No,No,1.0 No card,0.5869924426078796
+Tackling,Under body,Offence,No,No,1.0 No card,0.8779129981994629
+Tackling,Under body,No offence,Yes,No,1.0 No card,0.928281307220459
+Standing tackling,Under body,Offence,No,Yes,1.0 No card,0.9978437423706055
+Standing tackling,Under body,Offence,No,No,1.0 No card,0.9838031530380249
+Challenge,Use of arms,Offence,No,No,1.0 No card,0.5170297026634216
+Standing tackling,Under body,Offence,No,Yes,2.0 Borderline No/Yellow,0.896458625793457

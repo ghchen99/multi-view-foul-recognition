@@ -90,8 +90,11 @@ def main():
     try:
         # 1. Extract features for training and validation
         logging.info("Extracting features...")
-        train_features = pipeline.extract_features('train', max_actions=100)
-        valid_features = pipeline.extract_features('valid', max_actions=20)
+        # train_features = pipeline.extract_features('train', max_actions=300)
+        # valid_features = pipeline.extract_features('valid', max_actions=20)
+        
+        train_features = 'data/dataset/train/train_features.h5'  
+        valid_features = 'data/dataset/valid/valid_features.h5'
         
         # 2. Train model
         logging.info("Training model...")

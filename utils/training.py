@@ -70,7 +70,7 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
         offence_classes=len(class_weights['offence']),
         touchball_classes=len(class_weights['touchball']),
         trytoplay_classes=len(class_weights['trytoplay']),
-        severity_classes=severity_classes  # Adding severity classes
+        severity_classes=severity_classes
     ).to(device)
 
     # Define loss functions and optimizer
@@ -79,21 +79,16 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
     criterion_offence = nn.CrossEntropyLoss(weight=class_weights['offence'].to(device))
     criterion_touchball = nn.CrossEntropyLoss(weight=class_weights['touchball'].to(device))
     criterion_trytoplay = nn.CrossEntropyLoss(weight=class_weights['trytoplay'].to(device))
-    criterion_severity = nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))  # Add loss for severity
+    criterion_severity = nn.CrossEntropyLoss(weight=class_weights['severity'].to(device))
 
-    # AdamW optimizer with weight decay for regularization
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-    
-    # Learning rate scheduler with ReduceLROnPlateau for better adaptive learning rate
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.5)
-    
-    # Add gradient clipping to avoid exploding gradients
-    max_grad_norm = 1.0  # Set this to a suitable value
+    max_grad_norm = 1.0
 
     model.train()
     
     # Create DataLoader for batching
-    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], y_train['touchball'], y_train['trytoplay'], y_train['severity'])
+    dataset = TensorDataset(X_train, y_train['actionclass'], y_train['bodypart'], y_train['offence'], 
+                           y_train['touchball'], y_train['trytoplay'], y_train['severity'])
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Initialize lists to store losses for plotting
@@ -103,7 +98,14 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
     offence_losses = []
     touchball_losses = []
     trytoplay_losses = []
-    severity_losses = []  # Add list for severity losses
+    severity_losses = []
+
+    # Early stopping parameters
+    patience = 10  # Number of epochs to wait before early stopping
+    min_delta = 0.001  # Minimum change in loss to be considered as improvement
+    best_loss = float('inf')
+    patience_counter = 0
+    best_model_state = None
 
     for epoch in range(epochs):
         total_loss = 0
@@ -112,7 +114,7 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
         total_loss_offence = 0
         total_loss_touchball = 0
         total_loss_trytoplay = 0
-        total_loss_severity = 0  # Add variable for severity loss
+        total_loss_severity = 0
         
         for inputs, actionclass_labels, bodypart_labels, offence_labels, touchball_labels, trytoplay_labels, severity_labels in data_loader:
             inputs = inputs.to(device)
@@ -121,7 +123,7 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
             offence_labels = offence_labels.to(device)
             touchball_labels = touchball_labels.to(device)
             trytoplay_labels = trytoplay_labels.to(device)
-            severity_labels = severity_labels.to(device)  # Add severity labels
+            severity_labels = severity_labels.to(device)
             
             optimizer.zero_grad()
             
@@ -134,15 +136,15 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
             loss_offence = criterion_offence(outputs[2], offence_labels)
             loss_touchball = criterion_touchball(outputs[3], touchball_labels)
             loss_trytoplay = criterion_trytoplay(outputs[4], trytoplay_labels)
-            loss_severity = criterion_severity(outputs[5], severity_labels)  # Calculate loss for severity
+            loss_severity = criterion_severity(outputs[5], severity_labels)
             
-            # Total loss (with optional weighting for tasks)
-            total_loss_batch = loss_actionclass + loss_bodypart + loss_offence + loss_touchball + loss_trytoplay + loss_severity
+            # Total loss
+            total_loss_batch = (loss_actionclass + loss_bodypart + loss_offence + 
+                              loss_touchball + loss_trytoplay + loss_severity)
             total_loss_batch.backward()
             
             # Gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-
             optimizer.step()
             
             total_loss += total_loss_batch.item()
@@ -151,20 +153,29 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
             total_loss_offence += loss_offence.item()
             total_loss_touchball += loss_touchball.item()
             total_loss_trytoplay += loss_trytoplay.item()
-            total_loss_severity += loss_severity.item()  # Add severity loss
+            total_loss_severity += loss_severity.item()
 
-        # Step learning rate scheduler
-        scheduler.step(total_loss)
+        # Calculate average loss for the epoch
+        avg_total_loss = total_loss / len(data_loader)
 
-        # Append loss values to lists for plotting
+        # Early stopping check
+        if avg_total_loss < best_loss - min_delta:
+            best_loss = avg_total_loss
+            patience_counter = 0
+            best_model_state = model.state_dict().copy()
+        else:
+            patience_counter += 1
+
+        # Store losses for plotting
         total_losses.append(total_loss)
         actionclass_losses.append(total_loss_actionclass)
         bodypart_losses.append(total_loss_bodypart)
         offence_losses.append(total_loss_offence)
         touchball_losses.append(total_loss_touchball)
         trytoplay_losses.append(total_loss_trytoplay)
-        severity_losses.append(total_loss_severity)  # Append severity loss
+        severity_losses.append(total_loss_severity)
 
+        # Log progress
         logging.info(f"Epoch [{epoch + 1}/{epochs}], "
                     f"Total Loss: {total_loss:.4f}, "
                     f"Action Class Loss: {total_loss_actionclass:.4f}, "
@@ -172,10 +183,19 @@ def train_model(X_train, y_train, class_weights, severity_classes, epochs=20, ba
                     f"Offence Loss: {total_loss_offence:.4f}, "
                     f"Touchball Loss: {total_loss_touchball:.4f}, "
                     f"Try To Play Loss: {total_loss_trytoplay:.4f}, "
-                    f"Severity Loss: {total_loss_severity:.4f}")  # Log severity loss
+                    f"Severity Loss: {total_loss_severity:.4f}")
+
+        # Check if we should stop training
+        if patience_counter >= patience:
+            logging.info(f"Early stopping triggered after {epoch + 1} epochs")
+            # Load the best model state
+            if best_model_state is not None:
+                model.load_state_dict(best_model_state)
+            break
     
-    # After training, plot the loss curves
-    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, touchball_losses, trytoplay_losses, severity_losses)
+    # Plot the loss curves
+    plot_losses(total_losses, actionclass_losses, bodypart_losses, offence_losses, 
+                touchball_losses, trytoplay_losses, severity_losses)
     
     return model
 
