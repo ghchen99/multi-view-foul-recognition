@@ -10,9 +10,9 @@ from models.ActionData import ActionData
 from utils.HDF5Reader import save_to_hdf5
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
 from models.Decoder import Decoder
-from utils.training import ImprovedMultiTaskModel, load_model
+from utils.MultiTaskModel import ImprovedMultiTaskModel, load_model
 
-class FoulInferencePipeline:
+class InferencePipeline:
     """Pipeline for running inference with the improved foul detection model."""
     
     def __init__(self, model_path: str, base_dir: str = 'data/dataset/'):
@@ -20,7 +20,7 @@ class FoulInferencePipeline:
         self.preprocessor = FoulDataPreprocessor()
         self.decoder = Decoder()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model, self.metadata, self.class_weights, _, self.scaler = self._load_model(model_path)
+        self.model, self.metadata, self.history = self._load_model(model_path)
         self.extractor = FeatureExtractor(base_dir=base_dir, model_type='r3d_18')
         
         # Configure logging
@@ -30,15 +30,13 @@ class FoulInferencePipeline:
         )
         
         logging.info(f"Model loaded successfully. Device: {self.device}")
-        if self.scaler:
-            logging.info("Input scaler loaded")
 
-    def _load_model(self, model_path: str) -> Tuple[ImprovedMultiTaskModel, dict, dict, dict, object]:
+    def _load_model(self, model_path: str) -> Tuple[ImprovedMultiTaskModel, dict, dict]:
         """Load the trained model and its components."""
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
             
-        model, metadata, class_weights, history, scaler = load_model(model_path, self.device)
+        model, metadata, history = load_model(model_path, self.device)
         model.eval()
         
         logging.info("Model architecture:")
@@ -47,7 +45,7 @@ class FoulInferencePipeline:
             logging.info(f"- {task}: {out_features} classes")
         logging.info(f"- severity: {model.severity_head[-1].out_features} classes")
         
-        return model, metadata, class_weights, history, scaler
+        return model, metadata, history
 
     def process_video_for_inference(self, video_path: str, replay_speed: float = 1.0) -> str:
         """Process a single video for inference."""
@@ -104,10 +102,6 @@ class FoulInferencePipeline:
             X_test, _ = processed_data
             if X_test is None:
                 raise ValueError("X_test is None after preprocessing")
-                
-            # Apply scaler if available
-            if self.scaler:
-                X_test = self.scaler.transform(X_test)
             
             # Convert to tensor and move to device
             X_test = torch.FloatTensor(X_test).to(self.device)
@@ -117,7 +111,6 @@ class FoulInferencePipeline:
             with torch.no_grad():
                 outputs = self.model(X_test)
                 
-                # Apply softmax to get probabilities
                 predictions = {
                     task: F.softmax(output, dim=1).cpu().numpy()
                     for task, output in outputs.items()
@@ -171,8 +164,8 @@ class FoulInferencePipeline:
 
 def main():
     """Run the inference pipeline on a test video."""
-    model_path = "pretrained_models/20250128_223835/foul_detection_model.pth"
-    pipeline = FoulInferencePipeline(model_path)
+    model_path = "pretrained_models/20250129_195031/foul_detection_model.pth"
+    pipeline = InferencePipeline(model_path)
     
     try:
         # Process and run inference on a test video

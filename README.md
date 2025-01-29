@@ -4,6 +4,8 @@ Sick of refs getting it wrong?
 
 Introducing Multi-View Foul Recognition, the AI-powered solution designed to make football refereeing more accurate and fair. By leveraging multiple camera angles, this system can detect fouls with precision and assist referees in making real-time decisions based on comprehensive video analysis. Say goodbye to missed calls and controversial decisions!
 
+<img src="./assets/demo.png" alt="Frontend Screenshot" width="600" />
+
 ## 🚀 Features
 
 * Multi-Angle Video Analysis: Analyzes footage from multiple camera angles to accurately detect fouls in football matches.
@@ -24,30 +26,76 @@ mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge
 
 The incident tends to occur close to frame 75 (3 seconds) so previous studies have taken frames 63 to 87 as input.
 
-## 🔧 Installation
+## Prerequisites
 
-### Prerequisites
-* Python 3.7 or higher
-* TensorFlow or PyTorch (depending on the model you're using)
-* OpenCV for video processing
-* FFmpeg (for video conversion and frame extraction)
+- Python 3.8+
+- Node.js 16+
+- npm/yarn
 
-### Steps
+## Installation & Setup
 
-1. Clone the repository:
-```bash
-git clone https://github.com/ghchen99/multi-view-foul-recognition.git
-cd multi-view-foul-recognition
-```
-2. Install the required dependencies:
+1. First, install the Python dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
-3. Download the pre-trained models from the release page or train your own model by following the instructions in the training folder.
-4. To run the demo, use the following command:
+
+2. Install the frontend dependencies:
+
 ```bash
-python main.py --input_video your_video.mp4
+cd video-foul-detection
+npm install
 ```
+
+## Running the Application
+
+The application requires both the backend and frontend servers to be running.
+
+1. Start the Flask backend server:
+
+```bash
+# From the root directory
+python app.py
+```
+
+The backend will run on `http://localhost:5000`
+
+2. In a new terminal, start the React frontend development server:
+
+```bash
+cd video-foul-detection
+npm run dev
+```
+
+The frontend will run on `http://localhost:5173`
+
+3. Open your browser and navigate to `http://localhost:5173` to use the application
+
+## Usage
+
+1. Click "Choose Video" or drag and drop a video file into the upload area
+2. The video will be displayed with playback controls
+3. Click "Analyze for Fouls" to process the video
+4. View the analysis results showing:
+   - Detected actions/fouls
+   - Confidence scores
+   - Severity assessments
+   - Additional match insights
+
+## Technical Details
+
+### Backend (Python/Flask)
+- Flask server with CORS support
+- Custom video processing pipeline
+- PyTorch-based deep learning models
+- HDF5 feature extraction and storage
+
+### Frontend (React)
+- Built with Vite
+- TailwindCSS for styling
+- Real-time video playback
+- Interactive results visualization
+- Responsive design
 
 ## ⚙️ How It Works
 
@@ -62,14 +110,18 @@ This project uses advanced machine learning techniques to detect fouls in footba
 ## 📂 Folder Structure
 
 ```bash
-/multi-view-foul-recognition-2025
-│
-├── /src               # Source code for video processing and model inference
-├── /training          # Scripts and resources for training the AI model
-├── /data              # Folder for storing dataset and pre-processed videos
-├── requirements.txt   # Python dependencies
-├── README.md          # Project documentation
-└── main.py            # Main entry point for running the system
+/multi-view-foul-recognition
+├── app.py                      # Flask backend server
+├── inference_pipeline.py       # Video processing pipeline
+├── training_pipeline.py        # Model trainig pipeline
+├── test_pipeline.py            # Model testing pipeline
+├── models/                     # Model definitions
+├── utils/                      # Helper utilities
+├── video-foul-detection/       # React frontend
+    ├── src/
+    │   ├── components/        
+    │   └── App.jsx            
+    └── package.json
 ```
 
 ## 🤝 Contributing
@@ -85,4 +137,6 @@ We welcome contributions from the community! If you have ideas to improve the sy
 5. Push to your branch `git push origin feature-branch`.
 6. Create a new pull request.
 
+## License
 
+MIT License

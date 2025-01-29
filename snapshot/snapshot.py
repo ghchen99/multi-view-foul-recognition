@@ -17,6 +17,13 @@ DEFAULT_IGNORE_PATTERNS = {
     '.pytest_cache/',
     '*.swp',
     '.gitignore'
+    'venv/',
+    '.venv/',
+    'data/',
+    'pretrained_models/',
+    'snapshot/',
+    'snapshot.txt',
+    'snapshot.py',
 }
 
 def parse_gitignore() -> Set[str]:

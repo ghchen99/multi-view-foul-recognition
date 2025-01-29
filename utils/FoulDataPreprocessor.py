@@ -43,7 +43,9 @@ class FoulDataPreprocessor:
         counts = torch.bincount(labels, minlength=num_classes)
         total = len(labels)
         weights = total / (counts * num_classes)
-        return weights
+        # Clamp weights to prevent extreme values
+        weights = torch.clamp(weights, min=0.1, max=10.0)
+        return weights / weights.sum()
 
     def is_valid_features(self, video_features):
         """Check if video features are valid (non-empty and non-zero)."""
@@ -53,8 +55,7 @@ class FoulDataPreprocessor:
                 not torch.all(video_features == 0))
 
     def encode_labels(self, action):
-        """Encode categorical variables into numerical labels."""
-        return {
+        encoded = {
             'actionclass': self.action_class_map[action['actionclass']],
             'bodypart': self.bodypart_map[action['bodypart']],
             'offence': self.offence_map[action['offence']],
@@ -62,6 +63,7 @@ class FoulDataPreprocessor:
             'touchball': self.touchball_map[action['touchball']],
             'trytoplay': self.trytoplay_map[action['trytoplay']]
         }
+        return encoded
     
     def process_data(self, input_file):
         """Process and reshape the data for deep learning."""
