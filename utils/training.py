@@ -5,6 +5,7 @@ import torch.optim as optim
 from matplotlib import pyplot as plt
 import datetime
 from collections import defaultdict
+from torch.nn import functional as F
 import math
 import json
 from collections import Counter
@@ -139,6 +140,54 @@ class BalancedMultiTaskDataset(Dataset):
 
         return WeightedRandomSampler(sample_weights, len(sample_weights))
 
+class FocalLoss(nn.Module):
+    def __init__(self, weight=None, gamma=2.0, reduction='mean'):
+        super().__init__()
+        self.weight = weight
+        self.gamma = gamma
+        self.reduction = reduction
+        
+    def forward(self, input, target):
+        ce_loss = F.cross_entropy(input, target, weight=self.weight, reduction='none')
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+        
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        return focal_loss
+
+def create_weighted_loss(class_counts, use_focal=True, gamma=2.0):
+    """Create weighted Focal Loss for better handling of minority classes."""
+    num_classes = max(class_counts.keys()) + 1
+    total_samples = sum(class_counts.values())
+    max_count = max(class_counts.values())
+    
+    # Initialize weights for all possible classes
+    weights = torch.ones(num_classes)
+    
+    # More aggressive weighting formula with better minority class handling
+    for class_idx, count in class_counts.items():
+        # Combination of inverse frequency and square root scaling
+        ratio = (max_count / count) ** 0.5
+        minority_factor = 1 + math.log(max_count / count)
+        weights[class_idx] = max(ratio * minority_factor, 1.0)
+    
+    # Normalize weights to prevent loss scaling issues
+    weights = weights / weights.mean()
+    
+    # Print detailed class weight information
+    weight_info = {idx: {
+        'weight': round(float(w), 3),
+        'count': class_counts.get(idx, 0)
+    } for idx, w in enumerate(weights)}
+    print(f"\nClass weights and counts:")
+    print(json.dumps(weight_info, indent=2))
+    
+    if use_focal:
+        return FocalLoss(weight=weights.float(), gamma=gamma)
+    return torch.nn.CrossEntropyLoss(weight=weights.float())
 
 def plot_training_history(history, save_path):
     """
@@ -166,19 +215,7 @@ def plot_training_history(history, save_path):
     plt.savefig(save_path)
     plt.close()
 
-def create_weighted_loss(class_counts):
-    """Create weighted CrossEntropyLoss based on class frequencies."""
-    num_classes = max(class_counts.keys()) + 1
-    total_samples = sum(class_counts.values())
-    
-    # Initialize weights for all possible classes
-    weights = torch.ones(num_classes)
-    
-    # Set weights for classes that appear in the data
-    for class_idx, count in class_counts.items():
-        weights[class_idx] = total_samples / (len(class_counts) * count)
-    
-    return torch.nn.CrossEntropyLoss(weight=weights.float())
+
 
 def train_model(X_train, y_train, X_val, y_val, severity_classes, 
                 epochs=100, batch_size=128, learning_rate=0.0003):
@@ -188,12 +225,12 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
     train_dataset = BalancedMultiTaskDataset(X_train, y_train)
     val_dataset = BalancedMultiTaskDataset(X_val, y_val)
     
-    # Task importance weights (adjust based on your priorities)
+    # Task importance weights with stronger emphasis on imbalanced tasks
     task_weights = {
-        'severity': 2.0,  # Higher weight for severity as it's critical
-        'actionclass': 1.5,
-        'bodypart': 1.0,
-        'offence': 1.5,
+        'severity': 3.0,  # Much higher weight for severity due to critical red/yellow card cases
+        'actionclass': 2.5,  # Higher weight due to many minority classes
+        'bodypart': 1.5,
+        'offence': 2.0,  # Important for foul detection
         'touchball': 1.0,
         'trytoplay': 1.0
     }
@@ -201,11 +238,30 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
     # Create weighted sampler for training
     train_sampler = train_dataset.get_sampler(task_weights)
     
-    # Create data loaders
+    # Calculate effective batch size and samples per epoch
+    min_samples_per_class = 50  # Minimum times we want to see each class per epoch
+    max_class_counts = {
+        task: len(set(y_train[task])) for task in y_train.keys()
+    }
+    
+    # Adjust batch size down for better granularity
+    adjusted_batch_size = min(32, batch_size)  # Smaller batches
+    
+    # Calculate minimum samples needed per epoch
+    min_samples = max(
+        min_samples_per_class * max(max_class_counts.values()),  # Enough to see each class
+        len(X_train)  # At least one full pass through dataset
+    )
+    
+    # Create data loaders with replacement sampling
     train_loader = DataLoader(
         train_dataset, 
-        batch_size=batch_size,
-        sampler=train_sampler,
+        batch_size=adjusted_batch_size,
+        sampler=WeightedRandomSampler(
+            weights=train_sampler.weights,
+            num_samples=min_samples,
+            replacement=True
+        ),
         num_workers=4,
         pin_memory=True
     )
@@ -233,11 +289,6 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
     criteria = {}
     for task in y_train.keys():
         class_counts = Counter(y_train[task])
-        print(f"\nCreating loss weights for {task}:")
-        print(f"Class counts: {dict(class_counts)}")
-        print(f"Number of unique classes: {len(set(y_train[task]))}")
-        print(f"Max class index: {max(y_train[task])}")
-        
         criteria[task] = create_weighted_loss(class_counts).to(device)
         print(f"Created loss function with weights shape: {criteria[task].weight.shape}")
     
@@ -363,6 +414,7 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
         model.load_state_dict(best_model_state)
     
     return model, history
+
 # Modified save function without class weights
 def save_model(model, file_path, training_history=None):
     """

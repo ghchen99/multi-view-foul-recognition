@@ -113,9 +113,9 @@ def main():
         model = pipeline.train(
             train_file=train_features,
             valid_file=valid_features,
-            epochs=30,
-            batch_size=64,
-            learning_rate=0.0005
+            epochs=100,
+            batch_size=32,
+            learning_rate=0.0003
         )
         
         logging.info("Training pipeline completed successfully!")
