@@ -47,10 +47,7 @@ def validate_video_file(file) -> None:
         raise APIError(f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}', 400)
 
 def format_predictions(raw_predictions: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Format predictions from the new model structure into the existing API response format.
-    The new model returns a list of dictionaries with category, prediction, and probability.
-    """
+    """Format predictions from the model into the API response format."""
     try:
         formatted_predictions = []
         for pred in raw_predictions:
@@ -63,36 +60,37 @@ def format_predictions(raw_predictions: List[Dict[str, Any]]) -> Dict[str, Any]:
             }
             formatted_predictions.append(category_result)
             
-            # Log in a nice format
+            # Log predictions in a readable format
+            confidence = "▓" * int(pred['probability'] * 20) + "░" * (20 - int(pred['probability'] * 20))
             logger.info(f"\n{pred['category']}:")
-            logger.info(f"  • {pred['prediction']:<20} {pred['probability']:.2%}")
+            logger.info(f"  • {pred['prediction']:<20} [{confidence}] {pred['probability']:.1%}")
                 
         return {'predictions': formatted_predictions}
         
     except Exception as e:
-        logger.error(f"Error formatting predictions structure: {str(e)}")
-        logger.debug(f"Raw predictions structure: {raw_predictions}")
+        logger.error(f"Error formatting predictions: {str(e)}")
+        logger.debug(f"Raw predictions: {raw_predictions}")
         raise
 
 def process_video(video_file) -> Tuple[str, Dict[str, Any]]:
     """Process the video file and return predictions"""
     temp_path = None
     try:
+        # Save uploaded file to temporary location
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
             video_file.save(temp_file.name)
             temp_path = temp_file.name
 
         try:
             logger.info("Processing video for inference...")
-            features_path = pipeline.process_video_for_inference(temp_path, replay_speed=1.4)
+            features_path = pipeline.process_video_for_inference(temp_path, replay_speed=1.0)
             
             logger.info("Running inference...")
             raw_predictions = pipeline.inference(features_path)
             
-            # Format predictions using the enhanced formatter
             formatted_predictions = format_predictions(raw_predictions)
-            
             logger.info("Inference completed successfully!")
+            
             return features_path, formatted_predictions
             
         except Exception as e:
@@ -101,7 +99,6 @@ def process_video(video_file) -> Tuple[str, Dict[str, Any]]:
     except Exception as e:
         raise APIError(f"Error saving video file: {str(e)}", 500)
     finally:
-        # Clean up temporary file if it exists
         if temp_path and os.path.exists(temp_path):
             try:
                 os.unlink(temp_path)
@@ -119,7 +116,10 @@ def cleanup_files(*files: str) -> None:
 
 # Initialize pipeline with error handling
 try:
-    pipeline = FoulInferencePipeline(model_path="pretrained_models/20250128_223835/foul_detection_model.pth")
+    pipeline = FoulInferencePipeline(
+        model_path="pretrained_models/20250128_235911/foul_detection_model.pth",
+        base_dir='data/dataset/'
+    )
 except Exception as e:
     logger.critical(f"Failed to initialize inference pipeline: {str(e)}")
     raise
@@ -148,7 +148,7 @@ def process_video_endpoint():
         
         return jsonify({
             'status': 'success',
-            **predictions  # Unpack formatted predictions
+            **predictions
         })
         
     except APIError as e:
@@ -164,7 +164,6 @@ def process_video_endpoint():
         return jsonify({'error': 'An unexpected error occurred'}), 500
         
     finally:
-        # Clean up temporary files in all cases
         cleanup_files(temp_path, features_path)
 
 if __name__ == '__main__':

@@ -135,163 +135,120 @@ def plot_training_history(history, save_path):
     plt.savefig(save_path)
     plt.close()
 
-def train_model(X_train, y_train, X_val, y_val, class_weights, severity_classes, 
+def train_model(X_train, y_train, X_val, y_val, severity_classes, 
                 epochs=100, batch_size=128, learning_rate=0.0003):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # 1. Gradient Accumulation for larger effective batch size
-    accum_iter = 4
-    effective_batch_size = batch_size * accum_iter
-    
-    # 2. Create datasets with weighted sampling
-    train_weights = compute_sample_weights(y_train)
-    train_sampler = torch.utils.data.WeightedRandomSampler(
-        train_weights, len(train_weights), replacement=True
-    )
-    
+    # Create datasets without weighted sampling
     train_dataset = MultiTaskDataset(X_train, y_train)
     val_dataset = MultiTaskDataset(X_val, y_val)
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size)
     
-    # 3. Model with LayerNorm and residual connections
+    # Model initialization without class weights
     model = ImprovedMultiTaskModel(
         input_size=X_train.shape[1],
-        action_classes=len(class_weights['actionclass']),
-        bodypart_classes=len(class_weights['bodypart']),
-        offence_classes=len(class_weights['offence']),
-        touchball_classes=len(class_weights['touchball']),
-        trytoplay_classes=len(class_weights['trytoplay']),
+        action_classes=max(y_train['actionclass']) + 1,
+        bodypart_classes=max(y_train['bodypart']) + 1,
+        offence_classes=max(y_train['offence']) + 1,
+        touchball_classes=max(y_train['touchball']) + 1,
+        trytoplay_classes=max(y_train['trytoplay']) + 1,
         severity_classes=severity_classes
     ).to(device)
     
-    # 4. Improved learning rate scheduling
-    base_lr = learning_rate
-    warmup_epochs = 5
-    
-    # 5. Automatic Mixed Precision for faster training
-    scaler = torch.cuda.amp.GradScaler()
-    
-    # 6. Dynamic task weighting based on loss magnitudes
-    task_weights = {task: 1.0 for task in class_weights.keys()}
-    
-    # 7. Label smoothing in loss function
+    # Simple cross entropy loss without weights or focal loss
     criteria = {
-        task: FocalLoss(
-            weight=class_weights[task].to(device),
-            gamma=2 if task in ['actionclass', 'severity'] else 1,
-            label_smoothing=0.1
-        ) for task in class_weights.keys()
+        task: nn.CrossEntropyLoss() for task in y_train.keys()
     }
     
-    # 8. Layer-wise learning rates
-    param_groups = [
-        {'params': model.shared_net.parameters(), 'lr': base_lr},
-        {'params': model.primary_heads.parameters(), 'lr': base_lr * 1.5},
-        {'params': model.severity_head.parameters(), 'lr': base_lr * 2.0}
-    ]
+    # Basic optimizer setup
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     
-    optimizer = optim.AdamW(param_groups, weight_decay=0.01)
+    # Learning rate scheduler
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
     
-    # 9. Cosine annealing with warmup
-    def lr_lambda(epoch):
-        if epoch < warmup_epochs:
-            return epoch / warmup_epochs
-        return 0.5 * (1 + math.cos(math.pi * (epoch - warmup_epochs) / (epochs - warmup_epochs)))
-    
-    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
-    
-    # 10. Improved early stopping with loss plateau detection
-    best_val_loss = float('inf')
-    patience = 15
-    plateau_threshold = 0.001
-    plateau_count = 0
-    best_model_state = None
-    
+    # Training history tracking
     history = {
-        'train_losses': {task: [] for task in class_weights.keys()},
-        'val_losses': {task: [] for task in class_weights.keys()},
+        'train_losses': {task: [] for task in y_train.keys()},
+        'val_losses': {task: [] for task in y_train.keys()},
         'lrs': []
     }
     
+    # Early stopping setup
+    best_val_loss = float('inf')
+    patience = 10
+    no_improve_count = 0
+    best_model_state = None
+    
     for epoch in range(epochs):
-        # Training phase with gradient accumulation
+        # Training phase
         model.train()
         train_losses = defaultdict(float)
-        optimizer.zero_grad()
         
-        for i, (inputs, labels_dict) in enumerate(train_loader):
+        for inputs, labels_dict in train_loader:
             inputs = inputs.to(device)
             labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
             
-            # Use automatic mixed precision
-            with torch.cuda.amp.autocast():
-                outputs = model(inputs)
-                batch_loss = 0
-                for task, criterion in criteria.items():
-                    task_loss = criterion(outputs[task], labels_dict[task])
-                    weighted_loss = task_loss * task_weights[task]
-                    batch_loss += weighted_loss
-                    train_losses[task] += task_loss.item()
-                
-                # Scale loss by accumulation factor
-                batch_loss = batch_loss / accum_iter
+            optimizer.zero_grad()
+            outputs = model(inputs)
             
-            # Accumulate gradients
-            scaler.scale(batch_loss).backward()
+            # Calculate losses without task weights
+            batch_loss = 0
+            for task, criterion in criteria.items():
+                task_loss = criterion(outputs[task], labels_dict[task])
+                batch_loss += task_loss
+                train_losses[task] += task_loss.item()
             
-            if (i + 1) % accum_iter == 0:
-                scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad()
+            batch_loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
         
         # Validation phase
-        val_losses = validate_epoch(model, val_loader, criteria, task_weights, device)
+        model.eval()
+        val_losses = defaultdict(float)
+        
+        with torch.no_grad():
+            for inputs, labels_dict in val_loader:
+                inputs = inputs.to(device)
+                labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
+                outputs = model(inputs)
+                
+                for task, criterion in criteria.items():
+                    val_losses[task] += criterion(outputs[task], labels_dict[task]).item()
         
         # Update learning rate
         scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         history['lrs'].append(current_lr)
         
-        # Dynamic task weight adjustment
-        val_losses_tensor = torch.tensor([val_losses[task] for task in criteria.keys()])
-        max_loss = val_losses_tensor.max().item()
-        
-        for task in task_weights:
-            if task == 'severity':
-                min_other_loss = min([val_losses[t] for t in criteria.keys() if t != 'severity'])
-                task_weights[task] = (val_losses[task] / max_loss) * (1.5 if min_other_loss < 0.1 else 1.0)
-            else:
-                task_weights[task] = (val_losses[task] / max_loss)
-        
         # Update history
         for task in criteria.keys():
             history['train_losses'][task].append(train_losses[task] / len(train_loader))
-            history['val_losses'][task].append(val_losses[task])
+            history['val_losses'][task].append(val_losses[task] / len(val_loader))
         
-        # Early stopping with plateau detection
-        val_loss = sum(val_losses.values())
-        if val_loss < best_val_loss - plateau_threshold:
+        # Early stopping check
+        val_loss = sum(val_losses.values()) / len(val_loader)
+        if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_model_state = model.state_dict()
-            plateau_count = 0
+            no_improve_count = 0
         else:
-            plateau_count += 1
+            no_improve_count += 1
             
-        if plateau_count >= patience:
-            print(f"Training stopped at epoch {epoch + 1} due to loss plateau")
+        if no_improve_count >= patience:
+            print(f"Early stopping triggered at epoch {epoch + 1}")
             break
         
         # Logging
         if (epoch + 1) % 5 == 0:
             print(f"Epoch [{epoch + 1}/{epochs}] LR: {current_lr:.6f}")
             for task in criteria.keys():
-                print(f"{task}: Train = {train_losses[task]/len(train_loader):.4f}, "
-                      f"Val = {val_losses[task]:.4f}, Weight = {task_weights[task]:.3f}")
+                train_loss = train_losses[task] / len(train_loader)
+                val_loss = val_losses[task] / len(val_loader)
+                print(f"{task} - Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
     
+    # Load best model state
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
     
@@ -374,8 +331,18 @@ def compute_sample_weights(y_dict):
             
         # Count class frequencies
         unique, counts = torch.unique(labels, return_counts=True)
+        total = len(labels)
         class_weights = 1.0 / counts.float()
         class_weights = class_weights / class_weights.sum()
+        
+        # In train_model, after calculating class weights
+        print(f"\n{task}:")
+        print("Class frequencies:")
+        for cls, count in zip(unique.tolist(), counts.tolist()):
+            print(f"  Class {cls}: {count}/{total} ({100*count/total:.2f}%)")
+        print("Class weights:")
+        for cls, weight in zip(unique.tolist(), class_weights.tolist()):
+            print(f"  Class {cls}: {weight:.4f}")
         
         # Apply weights to samples
         sample_weights = class_weights[labels]
@@ -385,46 +352,37 @@ def compute_sample_weights(y_dict):
     weights = weights / weights.sum() * len(weights)
     return weights
 
-def save_model(model, file_path, class_weights=None, training_history=None, scaler=None):
+# Modified save function without class weights
+def save_model(model, file_path, training_history=None):
     """
-    Save the model along with metadata and optional training artifacts.
+    Save the model along with metadata and training history.
     """
-    # Get base path without extension
     base_path = file_path.rsplit('.', 1)[0]
     
-    # Save the training history plot if history exists
     if training_history is not None:
         plot_path = f"{base_path}_training_history.png"
         plot_training_history(training_history, plot_path)
-        print(f"Training history plot saved to {plot_path}")
     
-    # Get model configuration
     metadata = {
         'model_config': {
-            'input_size': model.shared_net[0].in_features,
-            'action_classes': model.primary_heads['actionclass'].net[-1].out_features,
-            'bodypart_classes': model.primary_heads['bodypart'].net[-1].out_features,
-            'offence_classes': model.primary_heads['offence'].net[-1].out_features,
-            'touchball_classes': model.primary_heads['touchball'].net[-1].out_features,
-            'trytoplay_classes': model.primary_heads['trytoplay'].net[-1].out_features,
-            'severity_classes': model.severity_head[-1].out_features
+            'input_size': int(model.shared_net[0].in_features),
+            'action_classes': int(model.primary_heads['actionclass'].net[-1].out_features),
+            'bodypart_classes': int(model.primary_heads['bodypart'].net[-1].out_features),
+            'offence_classes': int(model.primary_heads['offence'].net[-1].out_features),
+            'touchball_classes': int(model.primary_heads['touchball'].net[-1].out_features),
+            'trytoplay_classes': int(model.primary_heads['trytoplay'].net[-1].out_features),
+            'severity_classes': int(model.severity_head[-1].out_features)
         },
         'architecture_version': '2.0',
         'timestamp': datetime.datetime.now().isoformat()
     }
     
-    # Prepare checkpoint
     checkpoint = {
         'model_state_dict': model.state_dict(),
         'metadata': metadata,
-        'class_weights': class_weights,
         'training_history': training_history
     }
     
-    if scaler is not None:
-        checkpoint['scaler'] = scaler
-    
-    # Save to file
     torch.save(checkpoint, file_path)
     print(f"Model saved to {file_path}")
     print("Saved metadata:", json.dumps(metadata, indent=2))
@@ -440,9 +398,7 @@ def load_model(file_path, device=None):
     Returns:
         model: Loaded model
         metadata: Model metadata
-        class_weights: Class weights used during training
         training_history: Training metrics history
-        scaler: Data scaler if it was saved, None otherwise
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -467,13 +423,11 @@ def load_model(file_path, device=None):
     print(f"Model loaded from {file_path}")
     print("Loaded metadata:", json.dumps(metadata, indent=2))
     
-    # Return all saved components
+    # Return only relevant components
     return (
         model,
         metadata,
-        checkpoint.get('class_weights'),
-        checkpoint.get('training_history'),
-        checkpoint.get('scaler')
+        checkpoint.get('training_history')
     )
 
 

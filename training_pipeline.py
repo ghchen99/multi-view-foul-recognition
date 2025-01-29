@@ -39,20 +39,13 @@ class FoulTrainingPipeline:
         
         if X_train is None or X_val is None:
             raise ValueError("Failed to process training or validation data")
-            
-        # Calculate class weights from training data only
-        class_weights = self._calculate_class_weights(y_train)
         
-        # Get input scaler if preprocessing includes scaling
-        scaler = getattr(self.preprocessor, 'scaler', None)
-        
-        # Train model
+        # Train model with simplified approach
         model, history = train_model(
             X_train=X_train,
             y_train=y_train,
             X_val=X_val,
             y_val=y_val,
-            class_weights=class_weights,
             severity_classes=len(self.preprocessor.severity_map),
             epochs=epochs,
             batch_size=batch_size,
@@ -64,14 +57,12 @@ class FoulTrainingPipeline:
         save_dir = Path("pretrained_models") / timestamp
         save_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save the model with all components
+        # Save the model with simplified components
         model_path = save_dir / "foul_detection_model.pth"
         save_model(
             model=model,
             file_path=str(model_path),
-            class_weights=class_weights,
-            training_history=history,
-            scaler=scaler
+            training_history=history
         )
         
         # Save additional metadata for reference
@@ -79,23 +70,6 @@ class FoulTrainingPipeline:
         
         logging.info(f"Model and metadata saved to {save_dir}")
         return model
-
-    def _calculate_class_weights(self, y_train: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """Calculate class weights for all tasks."""
-        return {
-            'actionclass': self.preprocessor.get_class_weights(
-                y_train['actionclass'], len(self.preprocessor.action_class_map)),
-            'bodypart': self.preprocessor.get_class_weights(
-                y_train['bodypart'], len(self.preprocessor.bodypart_map)),
-            'offence': self.preprocessor.get_class_weights(
-                y_train['offence'], len(self.preprocessor.offence_map)),
-            'touchball': self.preprocessor.get_class_weights(
-                y_train['touchball'], len(self.preprocessor.touchball_map)),
-            'trytoplay': self.preprocessor.get_class_weights(
-                y_train['trytoplay'], len(self.preprocessor.trytoplay_map)),
-            'severity': self.preprocessor.get_class_weights(
-                y_train['severity'], len(self.preprocessor.severity_map))
-        }
     
     def _save_mapping_info(self, save_dir: Path) -> None:
         """Save label mapping information."""
@@ -105,9 +79,7 @@ class FoulTrainingPipeline:
             """Convert bytes keys/values to strings in a mapping."""
             converted = {}
             for k, v in mapping.items():
-                # Convert key from bytes to str if needed
                 key = k.decode('utf-8') if isinstance(k, bytes) else str(k)
-                # Convert value from bytes to str if needed
                 value = v.decode('utf-8') if isinstance(v, bytes) else str(v)
                 converted[key] = value
             return converted
@@ -129,20 +101,19 @@ def main():
     pipeline = FoulTrainingPipeline()
     
     try:
-        # 1. Extract features for training and validation
-        logging.info("Extracting features...")
+        # Use existing feature files
         # train_features = pipeline.extract_features('train', max_actions=None)
         # valid_features = pipeline.extract_features('valid', max_actions=None)
         
         train_features = 'data/dataset/train/train_features.h5'
         valid_features = 'data/dataset/valid/valid_features.h5'
         
-        # 2. Train model
+        # Train model
         logging.info("Training model...")
         model = pipeline.train(
             train_file=train_features,
             valid_file=valid_features,
-            epochs=150,
+            epochs=30,
             batch_size=64,
             learning_rate=0.0005
         )

@@ -22,7 +22,7 @@ class FoulTestPipeline:
         self.preprocessor = FoulDataPreprocessor()
         self.decoder = Decoder()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model, self.metadata, self.class_weights, _, self.scaler = self._load_model(model_path)
+        self.model, self.metadata, self.history = self._load_model(model_path)
         self.feature_extractor = FeatureExtractor(base_dir=base_dir, model_type='r3d_18')
         
         # Initialize class names from decoder maps
@@ -42,15 +42,13 @@ class FoulTestPipeline:
         )
         
         logging.info(f"Model loaded successfully. Device: {self.device}")
-        if self.scaler:
-            logging.info("Input scaler loaded")
 
-    def _load_model(self, model_path: str) -> Tuple[ImprovedMultiTaskModel, dict, dict, dict, object]:
+    def _load_model(self, model_path: str) -> Tuple[ImprovedMultiTaskModel, dict, dict]:
         """Load the trained model and its components."""
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
             
-        model, metadata, class_weights, history, scaler = load_model(model_path, self.device)
+        model, metadata, history = load_model(model_path, self.device)
         model.eval()
         
         logging.info("Model architecture:")
@@ -59,7 +57,7 @@ class FoulTestPipeline:
             logging.info(f"- {task}: {out_features} classes")
         logging.info(f"- severity: {model.severity_head[-1].out_features} classes")
         
-        return model, metadata, class_weights, history, scaler
+        return model, metadata, history
 
     def extract_features(self, split: str, max_actions: Optional[int] = None) -> str:
         """Extract features for the test dataset split."""
@@ -78,10 +76,6 @@ class FoulTestPipeline:
             if X_test is None or y_test is None:
                 raise ValueError("Preprocessor returned None")
                 
-            # Apply scaler if available
-            if self.scaler:
-                X_test = self.scaler.transform(X_test)
-            
             # Convert to tensor and move to device
             X_test = torch.FloatTensor(X_test).to(self.device)
             logging.info(f"Input shape for testing: {X_test.shape}")
@@ -200,16 +194,11 @@ class FoulTestPipeline:
 
 def main():
     """Run the test pipeline."""
-    model_path = "pretrained_models/20250128_223835/foul_detection_model.pth"
+    model_path = "pretrained_models/20250128_235911/foul_detection_model.pth"
     pipeline = FoulTestPipeline(model_path)
     
     try:
-        # Extract features for test set
-        logging.info("Extracting test features...")
-        # test_features = pipeline.extract_features('test', max_actions=None)
-        
         test_features = 'data/dataset/test/test_features.h5'
-        test_features = 'data/dataset/train/train_features.h5'
         
         # Run evaluation
         logging.info("Running test evaluation...")
