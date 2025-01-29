@@ -55,16 +55,6 @@ class FoulDataPreprocessor:
                 not torch.all(video_features == 0))
 
     def encode_labels(self, action):
-        # Before encoding
-        print("Raw labels:", {
-            'actionclass': action['actionclass'],
-            'bodypart': action['bodypart'],
-            'offence': action['offence'],
-            'severity': action['severity'],
-            'touchball': action['touchball'],
-            'trytoplay': action['trytoplay']
-        })
-        
         encoded = {
             'actionclass': self.action_class_map[action['actionclass']],
             'bodypart': self.bodypart_map[action['bodypart']],
@@ -73,9 +63,6 @@ class FoulDataPreprocessor:
             'touchball': self.touchball_map[action['touchball']],
             'trytoplay': self.trytoplay_map[action['trytoplay']]
         }
-        
-        # After encoding
-        print("Encoded labels:", encoded)
         return encoded
     
     def process_data(self, input_file):

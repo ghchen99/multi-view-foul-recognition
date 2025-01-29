@@ -7,7 +7,8 @@ import datetime
 from collections import defaultdict
 import math
 import json
-from torch.utils.data import DataLoader, Dataset
+from collections import Counter
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
 
 class TaskSpecificHead(nn.Module):
@@ -95,7 +96,7 @@ class ImprovedMultiTaskModel(nn.Module):
         
         return primary_outputs
     
-class MultiTaskDataset(Dataset):
+class BalancedMultiTaskDataset(Dataset):
     def __init__(self, X, y_dict):
         self.X = torch.FloatTensor(X)
         self.y_dict = {task: torch.LongTensor(labels) for task, labels in y_dict.items()}
@@ -108,6 +109,36 @@ class MultiTaskDataset(Dataset):
         x = self.X[idx]
         y = {task: self.y_dict[task][idx] for task in self.tasks}
         return x, y
+
+    def get_sampler(self, task_weights=None):
+        """
+        Create a weighted sampler that balances multiple tasks simultaneously.
+        task_weights: dict of float values to weight the importance of each task
+        """
+        if task_weights is None:
+            task_weights = {task: 1.0 for task in self.tasks}
+
+        # Calculate weights for each sample based on all its labels
+        sample_weights = torch.zeros(len(self))
+        
+        for task in self.tasks:
+            labels = self.y_dict[task].numpy()
+            class_counts = Counter(labels)
+            n_samples = len(labels)
+            
+            # Weight for each class is inverse to its frequency
+            class_weights = {cls: n_samples / (count * len(class_counts)) 
+                           for cls, count in class_counts.items()}
+            
+            # Apply weights to each sample
+            task_sample_weights = torch.tensor([class_weights[label.item()] 
+                                             for label in self.y_dict[task]])
+            
+            # Add to total weights, weighted by task importance
+            sample_weights += task_sample_weights * task_weights[task]
+
+        return WeightedRandomSampler(sample_weights, len(sample_weights))
+
 
 def plot_training_history(history, save_path):
     """
@@ -135,18 +166,59 @@ def plot_training_history(history, save_path):
     plt.savefig(save_path)
     plt.close()
 
+def create_weighted_loss(class_counts):
+    """Create weighted CrossEntropyLoss based on class frequencies."""
+    num_classes = max(class_counts.keys()) + 1
+    total_samples = sum(class_counts.values())
+    
+    # Initialize weights for all possible classes
+    weights = torch.ones(num_classes)
+    
+    # Set weights for classes that appear in the data
+    for class_idx, count in class_counts.items():
+        weights[class_idx] = total_samples / (len(class_counts) * count)
+    
+    return torch.nn.CrossEntropyLoss(weight=weights.float())
+
 def train_model(X_train, y_train, X_val, y_val, severity_classes, 
                 epochs=100, batch_size=128, learning_rate=0.0003):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # Create datasets without weighted sampling
-    train_dataset = MultiTaskDataset(X_train, y_train)
-    val_dataset = MultiTaskDataset(X_val, y_val)
+    # Create datasets with balanced sampling
+    train_dataset = BalancedMultiTaskDataset(X_train, y_train)
+    val_dataset = BalancedMultiTaskDataset(X_val, y_val)
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+    # Task importance weights (adjust based on your priorities)
+    task_weights = {
+        'severity': 2.0,  # Higher weight for severity as it's critical
+        'actionclass': 1.5,
+        'bodypart': 1.0,
+        'offence': 1.5,
+        'touchball': 1.0,
+        'trytoplay': 1.0
+    }
     
-    # Model initialization without class weights
+    # Create weighted sampler for training
+    train_sampler = train_dataset.get_sampler(task_weights)
+    
+    # Create data loaders
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=4,
+        pin_memory=True
+    )
+    
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True
+    )
+    
+    # Initialize model
     model = ImprovedMultiTaskModel(
         input_size=X_train.shape[1],
         action_classes=max(y_train['actionclass']) + 1,
@@ -157,21 +229,38 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
         severity_classes=severity_classes
     ).to(device)
     
-    # Simple cross entropy loss without weights or focal loss
-    criteria = {
-        task: nn.CrossEntropyLoss() for task in y_train.keys()
-    }
+    # Create weighted loss functions for each task
+    criteria = {}
+    for task in y_train.keys():
+        class_counts = Counter(y_train[task])
+        print(f"\nCreating loss weights for {task}:")
+        print(f"Class counts: {dict(class_counts)}")
+        print(f"Number of unique classes: {len(set(y_train[task]))}")
+        print(f"Max class index: {max(y_train[task])}")
+        
+        criteria[task] = create_weighted_loss(class_counts).to(device)
+        print(f"Created loss function with weights shape: {criteria[task].weight.shape}")
     
-    # Basic optimizer setup
-    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    # Optimizer with gradient clipping
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     
-    # Learning rate scheduler
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
+    # Learning rate scheduler with warmup
+    total_steps = epochs * len(train_loader)
+    warmup_steps = total_steps // 10
+    
+    def lr_lambda(current_step):
+        if current_step < warmup_steps:
+            return float(current_step) / float(max(1, warmup_steps))
+        return max(0.0, float(total_steps - current_step) / float(max(1, total_steps - warmup_steps)))
+    
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
     
     # Training history tracking
     history = {
         'train_losses': {task: [] for task in y_train.keys()},
         'val_losses': {task: [] for task in y_train.keys()},
+        'train_metrics': {task: [] for task in y_train.keys()},
+        'val_metrics': {task: [] for task in y_train.keys()},
         'lrs': []
     }
     
@@ -184,29 +273,39 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
     for epoch in range(epochs):
         # Training phase
         model.train()
-        train_losses = defaultdict(float)
+        train_losses = {task: 0.0 for task in y_train.keys()}
+        train_correct = {task: 0 for task in y_train.keys()}
+        train_total = {task: 0 for task in y_train.keys()}
         
-        for inputs, labels_dict in train_loader:
+        for batch_idx, (inputs, labels_dict) in enumerate(train_loader):
             inputs = inputs.to(device)
             labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
             
             optimizer.zero_grad()
             outputs = model(inputs)
             
-            # Calculate losses without task weights
             batch_loss = 0
-            for task, criterion in criteria.items():
-                task_loss = criterion(outputs[task], labels_dict[task])
-                batch_loss += task_loss
+            # Calculate weighted loss for each task
+            for task in y_train.keys():
+                task_loss = criteria[task](outputs[task], labels_dict[task])
+                batch_loss += task_weights[task] * task_loss
                 train_losses[task] += task_loss.item()
+                
+                # Calculate accuracy
+                _, predicted = outputs[task].max(1)
+                train_correct[task] += predicted.eq(labels_dict[task]).sum().item()
+                train_total[task] += labels_dict[task].size(0)
             
             batch_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            scheduler.step()
         
         # Validation phase
         model.eval()
-        val_losses = defaultdict(float)
+        val_losses = {task: 0.0 for task in y_train.keys()}
+        val_correct = {task: 0 for task in y_train.keys()}
+        val_total = {task: 0 for task in y_train.keys()}
         
         with torch.no_grad():
             for inputs, labels_dict in val_loader:
@@ -214,18 +313,26 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
                 labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
                 outputs = model(inputs)
                 
-                for task, criterion in criteria.items():
-                    val_losses[task] += criterion(outputs[task], labels_dict[task]).item()
+                for task in y_train.keys():
+                    val_losses[task] += criteria[task](outputs[task], labels_dict[task]).item()
+                    _, predicted = outputs[task].max(1)
+                    val_correct[task] += predicted.eq(labels_dict[task]).sum().item()
+                    val_total[task] += labels_dict[task].size(0)
         
-        # Update learning rate
-        scheduler.step()
+        # Update history
         current_lr = scheduler.get_last_lr()[0]
         history['lrs'].append(current_lr)
         
-        # Update history
-        for task in criteria.keys():
+        for task in y_train.keys():
+            # Update losses
             history['train_losses'][task].append(train_losses[task] / len(train_loader))
             history['val_losses'][task].append(val_losses[task] / len(val_loader))
+            
+            # Update metrics (accuracy)
+            train_acc = train_correct[task] / train_total[task]
+            val_acc = val_correct[task] / val_total[task]
+            history['train_metrics'][task].append(train_acc)
+            history['val_metrics'][task].append(val_acc)
         
         # Early stopping check
         val_loss = sum(val_losses.values()) / len(val_loader)
@@ -235,7 +342,7 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
             no_improve_count = 0
         else:
             no_improve_count += 1
-            
+        
         if no_improve_count >= patience:
             print(f"Early stopping triggered at epoch {epoch + 1}")
             break
@@ -243,115 +350,19 @@ def train_model(X_train, y_train, X_val, y_val, severity_classes,
         # Logging
         if (epoch + 1) % 5 == 0:
             print(f"Epoch [{epoch + 1}/{epochs}] LR: {current_lr:.6f}")
-            for task in criteria.keys():
+            for task in y_train.keys():
                 train_loss = train_losses[task] / len(train_loader)
                 val_loss = val_losses[task] / len(val_loader)
+                train_acc = train_correct[task] / train_total[task]
+                val_acc = val_correct[task] / val_total[task]
                 print(f"{task} - Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+                print(f"{task} - Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}")
     
     # Load best model state
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
     
     return model, history
-
-def train_epoch(model, train_loader, criteria, optimizer, scheduler, task_weights, device):
-    """Run one epoch of training."""
-    model.train()
-    train_task_losses = {task: 0.0 for task in criteria.keys()}
-    num_batches = 0
-    
-    for inputs, labels_dict in train_loader:
-        inputs = inputs.to(device)
-        labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
-        
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        
-        # Compute weighted task losses
-        batch_loss = 0
-        for task, criterion in criteria.items():
-            task_loss = criterion(outputs[task], labels_dict[task])
-            weighted_loss = task_loss * task_weights[task]
-            batch_loss += weighted_loss
-            train_task_losses[task] += task_loss.item()
-        
-        batch_loss.backward()
-        # Clip gradients
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
-        scheduler.step()
-        
-        num_batches += 1
-    
-    # Average losses over batches
-    return {task: loss / num_batches for task, loss in train_task_losses.items()}
-
-def validate_epoch(model, val_loader, criteria, task_weights, device):
-    """Run one epoch of validation."""
-    model.eval()
-    val_task_losses = {task: 0.0 for task in criteria.keys()}
-    num_batches = 0
-    
-    with torch.no_grad():
-        for inputs, labels_dict in val_loader:
-            inputs = inputs.to(device)
-            labels_dict = {k: v.to(device) for k, v in labels_dict.items()}
-            outputs = model(inputs)
-            
-            for task, criterion in criteria.items():
-                task_loss = criterion(outputs[task], labels_dict[task])
-                val_task_losses[task] += task_loss.item()
-            num_batches += 1
-    
-    # Average losses over batches
-    return {task: loss / num_batches for task, loss in val_task_losses.items()}
-
-class FocalLoss(nn.Module):
-    def __init__(self, weight=None, gamma=2.0, label_smoothing=0.0):
-        super().__init__()
-        self.gamma = gamma
-        self.weight = weight
-        self.label_smoothing = label_smoothing
-        self.ce = nn.CrossEntropyLoss(weight=weight, reduction='none', label_smoothing=label_smoothing)
-        
-    def forward(self, input, target):
-        ce_loss = self.ce(input, target)
-        pt = torch.exp(-ce_loss)
-        focal_loss = ((1 - pt) ** self.gamma * ce_loss).mean()
-        return focal_loss
-
-def compute_sample_weights(y_dict):
-    """Compute sample weights based on task difficulty and class distribution"""
-    weights = torch.ones(len(next(iter(y_dict.values()))))
-    
-    for task, labels in y_dict.items():
-        # Convert to tensor if necessary
-        if not isinstance(labels, torch.Tensor):
-            labels = torch.tensor(labels)
-            
-        # Count class frequencies
-        unique, counts = torch.unique(labels, return_counts=True)
-        total = len(labels)
-        class_weights = 1.0 / counts.float()
-        class_weights = class_weights / class_weights.sum()
-        
-        # In train_model, after calculating class weights
-        print(f"\n{task}:")
-        print("Class frequencies:")
-        for cls, count in zip(unique.tolist(), counts.tolist()):
-            print(f"  Class {cls}: {count}/{total} ({100*count/total:.2f}%)")
-        print("Class weights:")
-        for cls, weight in zip(unique.tolist(), class_weights.tolist()):
-            print(f"  Class {cls}: {weight:.4f}")
-        
-        # Apply weights to samples
-        sample_weights = class_weights[labels]
-        weights *= sample_weights
-    
-    # Normalize weights
-    weights = weights / weights.sum() * len(weights)
-    return weights
-
 # Modified save function without class weights
 def save_model(model, file_path, training_history=None):
     """

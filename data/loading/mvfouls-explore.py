@@ -59,20 +59,13 @@ Offence:
   Offence: 2495 occurrences
   No offence: 324 occurrences
   Between: 96 occurrences
-  Empty: 1 occurrences
------------------
-Contact:
-  With contact: 2835 occurrences
-  Without contact: 81 occurrences
 -----------------
 Bodypart:
   Upper body: 1048 occurrences
   Under body: 1831 occurrences
-  Empty: 37 occurrences
 -----------------
 Upper body part:
   Use of shoulder: 332 occurrences
-  Empty: 1899 occurrences
   Use of arms: 670 occurrences
   Use of shoulders: 15 occurrences
 -----------------
@@ -83,44 +76,24 @@ Action class:
   High leg: 103 occurrences
   Dive: 28 occurrences
   Elbowing: 178 occurrences
-  Empty: 11 occurrences
   Holding: 361 occurrences
-  Dont know: 52 occurrences
   Pushing: 88 occurrences
 -----------------
 Severity:
   1.0: 1402 occurrences
   3.0: 687 occurrences
   5.0: 27 occurrences
-  Empty: 353 occurrences
   2.0: 403 occurrences
   4.0: 44 occurrences
   
   {1.0 :"No card", 2.0 :"Borderline No/Yellow", 3.0 :"Yellow card", 4.0 :"Borderline Yellow/Red", 5.0 :"Red card"}
 -----------------
-Multiple fouls:
-  Empty: 377 occurrences
-  Yes: 304 occurrences
-  No: 2234 occurrences
-  yes: 1 occurrences
------------------
 Try to play:
-  Empty: 1133 occurrences
   Yes: 1650 occurrences
   No: 133 occurrences
 -----------------
 Touch ball:
-  Empty: 1135 occurrences
   No: 1543 occurrences
   Yes: 192 occurrences
   Maybe: 46 occurrences
------------------
-Handball:
-  No handball: 2892 occurrences
-  Handball: 24 occurrences
------------------
-Handball offence:
-  Empty: 2892 occurrences
-  No offence: 6 occurrences
-  Offence: 18 occurrences
   -----------------'''
