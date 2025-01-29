@@ -7,9 +7,9 @@ from datetime import datetime
 
 from utils.FeatureExtractor import FeatureExtractor
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
-from utils.training import ImprovedMultiTaskModel, train_model, save_model
+from utils.MultiTaskModel import ImprovedMultiTaskModel, train_model, save_model
 
-class FoulTrainingPipeline:
+class TrainingPipeline:
     """Pipeline for training the foul detection model."""
     
     def __init__(self, base_dir: str = 'data/dataset/', model_type: str = 'r3d_18'):
@@ -98,7 +98,7 @@ class FoulTrainingPipeline:
 
 def main():
     """Run the training pipeline."""
-    pipeline = FoulTrainingPipeline()
+    pipeline = TrainingPipeline()
     
     try:
         # Use existing feature files
@@ -113,9 +113,9 @@ def main():
         model = pipeline.train(
             train_file=train_features,
             valid_file=valid_features,
-            epochs=100,
-            batch_size=32,
-            learning_rate=0.0003
+            epochs=150,  
+            batch_size=128,  
+            learning_rate=0.0002
         )
         
         logging.info("Training pipeline completed successfully!")

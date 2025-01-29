@@ -22,7 +22,8 @@ DEFAULT_IGNORE_PATTERNS = {
     'data/',
     'pretrained_models/',
     'snapshot/',
-    'video-foul-detection/',
+    'snapshot.txt',
+    'snapshot.py',
 }
 
 def parse_gitignore() -> Set[str]:

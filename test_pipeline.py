@@ -11,10 +11,10 @@ from collections import Counter
 
 from utils.FeatureExtractor import FeatureExtractor
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
-from utils.training import ImprovedMultiTaskModel, load_model
+from utils.MultiTaskModel import ImprovedMultiTaskModel, load_model
 from models.Decoder import Decoder
 
-class FoulTestPipeline:
+class TestPipeline:
     """Pipeline for testing the foul detection model on a test dataset."""
     
     def __init__(self, model_path: str, base_dir: str = 'data/dataset/'):
@@ -194,8 +194,8 @@ class FoulTestPipeline:
 
 def main():
     """Run the test pipeline."""
-    model_path = "pretrained_models/20250129_155420/foul_detection_model.pth"
-    pipeline = FoulTestPipeline(model_path)
+    model_path = "pretrained_models/20250129_195031/foul_detection_model.pth"
+    pipeline = TestPipeline(model_path)
     
     try:
         test_features = 'data/dataset/test/test_features.h5'

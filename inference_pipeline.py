@@ -10,9 +10,9 @@ from models.ActionData import ActionData
 from utils.HDF5Reader import save_to_hdf5
 from utils.FoulDataPreprocessor import FoulDataPreprocessor
 from models.Decoder import Decoder
-from utils.training import ImprovedMultiTaskModel, load_model
+from utils.MultiTaskModel import ImprovedMultiTaskModel, load_model
 
-class FoulInferencePipeline:
+class InferencePipeline:
     """Pipeline for running inference with the improved foul detection model."""
     
     def __init__(self, model_path: str, base_dir: str = 'data/dataset/'):
@@ -164,8 +164,8 @@ class FoulInferencePipeline:
 
 def main():
     """Run the inference pipeline on a test video."""
-    model_path = "pretrained_models/20250128_235911/foul_detection_model.pth"
-    pipeline = FoulInferencePipeline(model_path)
+    model_path = "pretrained_models/20250129_195031/foul_detection_model.pth"
+    pipeline = InferencePipeline(model_path)
     
     try:
         # Process and run inference on a test video

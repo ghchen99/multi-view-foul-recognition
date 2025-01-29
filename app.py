@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import tempfile
-from inference_pipeline import FoulInferencePipeline
+from inference_pipeline import InferencePipeline
 import logging
 from typing import Tuple, Dict, Any, List
 
@@ -116,8 +116,8 @@ def cleanup_files(*files: str) -> None:
 
 # Initialize pipeline with error handling
 try:
-    pipeline = FoulInferencePipeline(
-        model_path="pretrained_models/20250128_235911/foul_detection_model.pth",
+    pipeline = InferencePipeline(
+        model_path="pretrained_models/20250129_195031/foul_detection_model.pth",
         base_dir='data/dataset/'
     )
 except Exception as e:
