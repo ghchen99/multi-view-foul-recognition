@@ -62,8 +62,11 @@ coverage/
 *.DS_Store
 
 # data
-data/dataset/
-pretrained_models/
-test_results/
+backend/data/dataset/
+backend/pretrained_models/
+backend/test_results/
 
-foul_detection_model.pth
+snapshot.py
+snapshot.txt
+.env.local
+

@@ -1,142 +1,187 @@
-# Multi-View Foul Recognition
+# 📊 AI Football Referee
 
 Sick of refs getting it wrong?
 
 Introducing Multi-View Foul Recognition, the AI-powered solution designed to make football refereeing more accurate and fair. By leveraging multiple camera angles, this system can detect fouls with precision and assist referees in making real-time decisions based on comprehensive video analysis. Say goodbye to missed calls and controversial decisions!
 
-<img src="./assets/demo.png" alt="Frontend Screenshot" width="600" />
+<div align="center">
+  <img src="./assets/demo.png" alt="AI Football Referee Interface" width="100%" />
+</div>
 
-## 🚀 Features
+## 🌟 Overview
 
-* Multi-Angle Video Analysis: Analyzes footage from multiple camera angles to accurately detect fouls in football matches.
-* AI-Powered Recognition: Uses machine learning to distinguish between different types of fouls, ensuring consistent and fair officiating.
-* Real-Time Decision Support: Provides immediate feedback to referees, reducing human error and enhancing match integrity.
-* Scalable: Easily integrates with existing camera setups to process live footage or pre-recorded matches.
-* Open Source: Free for anyone to use, modify, and contribute to the development of more accurate foul detection systems.
+The AI Football Referee is a modern web application that analyzes video clips of football incidents to provide instant referee decisions with explanations. Leveraging state-of-the-art deep learning models and computer vision techniques, the system recognizes actions like tackles, challenges, and fouls, then makes referee decisions based on official football regulations.
 
-## 📚 Dataset
+## ✨ Key Features
 
-This project uses the SoccerNet-MVFoul dataset, which can be downloaded via API:
+- **Video Upload & Analysis**: Upload video clips of football incidents for automated analysis
+- **Multi-task Deep Learning**: Advanced model that detects multiple aspects of football incidents:
+  - Action classification (tackling, holding, elbowing, etc.)
+  - Body part involvement
+  - Touch ball detection
+  - Intent analysis (try to play detection)
+  - Severity assessment
+- **Referee Decision Generation**: AI-generated referee decisions with natural language explanations
+- **Visual Results Display**: Interactive UI showing model confidence for each detected aspect
+- **Real-time Processing**: Fast video processing and inference pipeline
 
+## 🏗️ Project Structure
+
+The project is divided into two main components:
+
+### Backend (Python/FastAPI)
+- Deep learning models for video analysis
+- FastAPI server for handling video uploads and inference
+- Multi-task learning pipeline
+- Video feature extraction
+
+### Frontend (Next.js)
+- Modern, responsive UI built with Next.js and TypeScript
+- Real-time video upload and processing interface
+- Interactive results display
+- ShadCN UI components for a polished look
+
+## 🔧 Technology Stack
+
+- **Backend**: 
+  - Python 3.10+
+  - FastAPI
+  - PyTorch
+  - OpenCV
+  - Azure OpenAI for explanation generation
+  - SoccerNet for dataset access
+
+- **Frontend**:
+  - Next.js 15
+  - TypeScript
+  - Zustand for state management
+  - Tailwind CSS
+  - ShadCN UI
+  - Axios for API requests
+
+## 📋 Prerequisites
+
+- Python 3.10 or higher
+- Node.js 20.x or higher
+- CUDA-compatible GPU (recommended for faster inference)
+- Azure OpenAI API access (for explanation generation)
+- SoccerNet access credentials (for dataset access during development)
+
+## 🚀 Getting Started
+
+### Backend Setup
+
+1. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Create a `.env` file with the following variables:
+   ```
+   AZURE_OPENAI_API_KEY=your_azure_openai_key
+   AZURE_OPENAI_ENDPOINT=your_azure_openai_endpoint
+   AZURE_OPENAI_API_VERSION=your_azure_openai_api_version
+   AZURE_OPENAI_DEPLOYMENT_NAME=your_azure_openai_deployment
+   SOCCERNET_PASSWORD=your_soccernet_password  # Only needed for dataset access/training
+   ```
+
+4. Start the backend server:
+   ```bash
+   cd backend
+   python app.py
+   ```
+
+### Frontend Setup
+
+1. Install dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. Create a `.env.local` file:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:5000
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Access the application at `http://localhost:3000`
+
+## 📄 API Documentation
+
+Once the backend is running, you can access the API documentation at `http://localhost:5000/docs`.
+
+Key endpoints:
+- `POST /api/inference`: Analyzes uploaded video and returns referee decision
+
+## 📚 Model Training
+
+The system uses deep learning models trained on the SoccerNet MVFouls dataset, which contains annotated video clips of football incidents.
+
+To train your own models:
+1. Set up the SoccerNet credentials in the `.env` file
+2. Run the download script to get the dataset:
+   ```bash
+   python backend/data/loading/mvfouls-download.py
+   ```
+3. Run the training pipeline:
+   ```bash
+   python backend/training/training_pipeline.py
+   ```
+
+Pre-trained models can be found in the `backend/pretrained_models` directory.
+
+## 🧪 Testing
+
+### Backend Tests
 ```bash
-from SoccerNet.Downloader import SoccerNetDownloader as SNdl
-mySNdl = SNdl(LocalDirectory="path/to/SoccerNet")
-mySNdl.downloadDataTask(task="mvfouls", split=["train","valid","test","challenge"], password="enter password")
+cd backend
+python -m pytest
 ```
 
-The incident tends to occur close to frame 75 (3 seconds) so previous studies have taken frames 63 to 87 as input.
-
-## Prerequisites
-
-- Python 3.8+
-- Node.js 16+
-- npm/yarn
-
-## Installation & Setup
-
-1. First, install the Python dependencies:
-
+### Frontend Tests
 ```bash
-pip install -r requirements.txt
+cd frontend
+npm run test
 ```
 
-2. Install the frontend dependencies:
+## 🔍 How It Works
 
-```bash
-cd video-foul-detection
-npm install
-```
-
-## Running the Application
-
-The application requires both the backend and frontend servers to be running.
-
-1. Start the Flask backend server:
-
-```bash
-# From the root directory
-python app.py
-```
-
-The backend will run on `http://localhost:5000`
-
-2. In a new terminal, start the React frontend development server:
-
-```bash
-cd video-foul-detection
-npm run dev
-```
-
-The frontend will run on `http://localhost:5173`
-
-3. Open your browser and navigate to `http://localhost:5173` to use the application
-
-## Usage
-
-1. Click "Choose Video" or drag and drop a video file into the upload area
-2. The video will be displayed with playback controls
-3. Click "Analyze for Fouls" to process the video
-4. View the analysis results showing:
-   - Detected actions/fouls
-   - Confidence scores
-   - Severity assessments
-   - Additional match insights
-
-## Technical Details
-
-### Backend (Python/Flask)
-- Flask server with CORS support
-- Custom video processing pipeline
-- PyTorch-based deep learning models
-- HDF5 feature extraction and storage
-
-### Frontend (React)
-- Built with Vite
-- TailwindCSS for styling
-- Real-time video playback
-- Interactive results visualization
-- Responsive design
-
-## ⚙️ How It Works
-
-This project uses advanced machine learning techniques to detect fouls in football matches through multi-angle video footage. Here's a breakdown of how the system operates:
-
-* Input Video: The system takes in a football match video captured from multiple camera angles.
-* Video Processing: Using OpenCV, the video is processed to extract frames from different angles.
-* AI Analysis: The extracted frames are analyzed using a pre-trained deep learning model, which has been trained to detect common football fouls (like tackles, handballs, or off-the-ball incidents).
-* Decision Support: The system identifies potential fouls and marks them, providing timestamps and a confidence score for each detection.
-* Referee Assistance: The system can provide suggestions to the referee, who can review the identified foul instances for a more informed decision.
-
-## 📂 Folder Structure
-
-```bash
-/multi-view-foul-recognition
-├── app.py                      # Flask backend server
-├── inference_pipeline.py       # Video processing pipeline
-├── training_pipeline.py        # Model trainig pipeline
-├── test_pipeline.py            # Model testing pipeline
-├── models/                     # Model definitions
-├── utils/                      # Helper utilities
-├── video-foul-detection/       # React frontend
-    ├── src/
-    │   ├── components/        
-    │   └── App.jsx            
-    └── package.json
-```
+1. **Video Upload**: User uploads a video clip of a football incident
+2. **Feature Extraction**: The system extracts temporal and spatial features from the video
+3. **Multi-Task Inference**: The deep learning model analyzes multiple aspects of the incident
+4. **Decision Generation**: Based on the analysis, the system generates a referee decision
+5. **Explanation**: An AI-powered explanation of the decision is generated
+6. **Result Display**: The user interface displays the decision and explanation to the user
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! If you have ideas to improve the system or fix bugs, feel free to fork the repository and submit a pull request.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Steps to Contribute:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-1. Fork the repository.
-2. Create a new branch `git checkout -b feature-branch`.
-3. Make your changes.
-4. Commit your changes `git commit -am 'Add new feature'`.
-5. Push to your branch `git push origin feature-branch`.
-6. Create a new pull request.
+## 📝 License
 
-## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-MIT License
+## 🙏 Acknowledgements
+
+- [SoccerNet](https://www.soccer-net.org/) for providing the MVFouls dataset
+- [PyTorch](https://pytorch.org/) for the deep learning framework
+- [FastAPI](https://fastapi.tiangolo.com/) for the API framework
+- [Next.js](https://nextjs.org/) for the frontend framework
+- [ShadCN UI](https://ui.shadcn.com/) for the UI components
