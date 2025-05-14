@@ -1,4 +1,4 @@
-# 📊 AI Football Referee
+# AI Football Referee
 
 Sick of refs getting it wrong?
 
