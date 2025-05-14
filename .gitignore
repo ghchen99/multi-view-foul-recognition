@@ -66,5 +66,7 @@ backend/data/dataset/
 backend/pretrained_models/
 backend/test_results/
 
-snapshot/
+snapshot.py
+snapshot.txt
+.env.local
 
