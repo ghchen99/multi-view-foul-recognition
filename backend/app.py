@@ -32,6 +32,8 @@ class CategoryResult(BaseModel):
 class PredictionResponse(BaseModel):
     status: str
     predictions: List[CategoryResult]
+    ai_decision: Optional[str] = None
+    explanation: Optional[str] = None
 
 class ErrorResponse(BaseModel):
     error: str
@@ -180,13 +182,7 @@ async def process_video_endpoint(
     video: UploadFile = File(...),
     background_tasks: BackgroundTasks = None
 ):
-    """
-    Process a video file and return predictions.
-    
-    - **video**: A video file to analyze (mp4, avi, mov, wmv)
-    
-    Returns prediction results for the video.
-    """
+    """Process a video file and return predictions with referee decision explanation."""
     temp_path = None
     features_path = None
     
@@ -197,13 +193,23 @@ async def process_video_endpoint(
         # Process video
         features_path, predictions = await process_video(video)
         
+        # Generate explanation from predictions
+        explanation_result = {"decision": "No Card", "explanation": "No explanation available"}
+        try:
+            from explanation import generate_explanation
+            explanation_result = generate_explanation(predictions["predictions"])
+        except Exception as e:
+            logger.error(f"Explanation generation failed: {str(e)}")
+        
         # Schedule cleanup
         if background_tasks:
             background_tasks.add_task(cleanup_files, temp_path, features_path)
         
         return {
             "status": "success",
-            "predictions": predictions["predictions"]
+            "predictions": predictions["predictions"],
+            "ai_decision": explanation_result.get("decision", "Unknown"),
+            "explanation": explanation_result.get("explanation", "No explanation available")
         }
         
     except HTTPException as e:
