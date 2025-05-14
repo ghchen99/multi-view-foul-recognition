@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useCallback, useState } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useVideoStore } from '@/lib/store/use-video-store';
+import { Card, CardContent } from '@/components/ui/card';
 
 export const VideoUploader = () => {
   const { setVideoFile, setVideoUrl, setError } = useVideoStore();
@@ -70,35 +71,72 @@ export const VideoUploader = () => {
   };
 
   return (
-    <div className="w-full">
-      <div
-        className={`relative flex flex-col items-center justify-center w-full h-64 p-4 border-2 border-dashed rounded-lg transition-colors ${
-          dragActive ? 'border-primary bg-muted/50' : 'border-gray-300'
-        }`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        onClick={handleClick}
-      >
-        <input
-          ref={fileInputRef}
-          className="hidden"
-          type="file"
-          accept="video/mp4,video/avi,video/quicktime,video/x-ms-wmv"
-          onChange={handleFileChange}
-        />
-        <Upload className="w-10 h-10 mb-3 text-gray-400" />
-        <p className="mb-2 text-sm text-gray-500 text-center">
-          <span className="font-semibold">Click to upload</span> or drag and drop
-        </p>
-        <p className="text-xs text-gray-500 text-center">
-          MP4, AVI, MOV, or WMV (Max 100MB)
-        </p>
-      </div>
+    <Card className="w-full overflow-hidden shadow-lg border-2">
+      <CardContent className="p-8">
+        <div className="text-center mb-6">
+          <Film className="h-16 w-16 mx-auto mb-4 text-primary" />
+          <h2 className="text-2xl font-bold mb-2">Football Incident Analysis</h2>
+          <p className="text-muted-foreground">
+            Upload a video clip of a football incident to receive an instant AI referee decision
+          </p>
+        </div>
+        
+        <div
+          className={`relative flex flex-col items-center justify-center w-full h-64 p-4 border-2 border-dashed rounded-lg transition-all cursor-pointer ${
+            dragActive 
+              ? 'border-primary bg-primary/5 scale-[1.02]' 
+              : 'border-gray-300 hover:border-primary/50 hover:bg-secondary/50'
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={handleClick}
+        >
+          <input
+            ref={fileInputRef}
+            className="hidden"
+            type="file"
+            accept="video/mp4,video/avi,video/quicktime,video/x-ms-wmv"
+            onChange={handleFileChange}
+          />
+          <div className={`transition-all duration-200 ${dragActive ? 'scale-110' : ''}`}>
+            <Upload className="w-12 h-12 mb-4 mx-auto text-primary" />
+            <p className="mb-2 text-sm font-medium text-center">
+              <span className="font-bold">Click to upload</span> or drag and drop
+            </p>
+            <p className="text-xs text-gray-500 text-center">
+              MP4, AVI, MOV, or WMV (Max 100MB)
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="w-10 h-px bg-border"></div>
+            <span>HOW IT WORKS</span>
+            <div className="w-10 h-px bg-border"></div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="p-3">
+              <div className="font-bold text-lg mb-1">1</div>
+              <p className="text-xs text-muted-foreground">Upload football incident video</p>
+            </div>
+            <div className="p-3">
+              <div className="font-bold text-lg mb-1">2</div>
+              <p className="text-xs text-muted-foreground">AI analyzes player actions</p>
+            </div>
+            <div className="p-3">
+              <div className="font-bold text-lg mb-1">3</div>
+              <p className="text-xs text-muted-foreground">Get referee decision & explanation</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
       
       <ErrorMessage />
-    </div>
+    </Card>
   );
 };
 
