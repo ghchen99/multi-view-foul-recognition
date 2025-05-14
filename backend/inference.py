@@ -15,7 +15,7 @@ from utils.MultiTaskModel import ImprovedMultiTaskModel, load_model
 class InferencePipeline:
     """Pipeline for running inference with the improved foul detection model."""
     
-    def __init__(self, model_path: str, base_dir: str = 'data/dataset/'):
+    def __init__(self, model_path: str, base_dir: str = 'backend/data/dataset/'):
         self.base_dir = Path(base_dir)
         self.preprocessor = FoulDataPreprocessor()
         self.decoder = Decoder()
@@ -164,12 +164,12 @@ class InferencePipeline:
 
 def main():
     """Run the inference pipeline on a test video."""
-    model_path = "pretrained_models/20250129_195031/foul_detection_model.pth"
+    model_path = "./backend/pretrained_models/20250129_195031/foul_detection_model.pth"
     pipeline = InferencePipeline(model_path)
     
     try:
         # Process and run inference on a test video
-        video_path = 'data/dataset/inference/testaction5_clip1.mp4'
+        video_path = 'backend/data/dataset/inference/testaction5_clip1.mp4'
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Test video not found: {video_path}")
             
