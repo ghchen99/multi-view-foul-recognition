@@ -2,7 +2,7 @@
 
 Sick of refs getting it wrong?
 
-Introducing Multi-View Foul Recognition, the AI-powered solution designed to make football refereeing more accurate and fair. By leveraging multiple camera angles, this system can detect fouls with precision and assist referees in making real-time decisions based on comprehensive video analysis. Say goodbye to missed calls and controversial decisions!
+Introducing Multi-View Foul Recognition, the AI-powered solution designed to make football refereeing more accurate and fair. By leveraging multiple camera angles, this system can detect fouls with precision and assist referees in making real-time decisions based on comprehensive video analysis. 
 
 <div align="center">
   <img src="./assets/demo1.png" alt="AI Football Referee Interface" width="100%" />
